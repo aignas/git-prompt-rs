@@ -34,6 +34,7 @@ impl Display for RepoStatusView {
         write!(f, "{:?}", self.model)
     }
 }
+
 pub struct BranchStatusView {
     pub model: Option<BranchStatus>,
 }
@@ -43,6 +44,7 @@ impl Display for BranchStatusView {
         write!(f, "{:?}", self.model)
     }
 }
+
 pub struct LocalStatusView {
     pub model: LocalStatus,
 }
