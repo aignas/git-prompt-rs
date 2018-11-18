@@ -4,16 +4,18 @@ use std::fmt::{self, Display, Formatter};
 type R<T> = Result<T, String>;
 
 fn main() {
-    match display_prompt("") {
+    let c = Colors {};
+    match display_prompt("", &c) {
         Ok(p) => print!("{} ", p),
         Err(_) => print!(" "),
     }
 }
 
-pub fn display_prompt(path: &str) -> R<PromptView> {
+pub struct Colors {}
+
+pub fn display_prompt(path: &str, c: &Colors) -> R<PromptView> {
     let repo = Repository::discover(path).or_else(|e| Err(format!("{:?}", e)))?;
-    let pr = prompt(&repo)?;
-    Ok(PromptView::new(pr))
+    prompt(repo).map(|p| PromptView::new(p, c))
 }
 
 pub struct PromptView {
@@ -23,15 +25,11 @@ pub struct PromptView {
 }
 
 impl PromptView {
-    fn new(prompt: Prompt) -> PromptView {
+    fn new(p: Prompt, _c: &Colors) -> PromptView {
         PromptView {
-            repo: RepoStatusView { model: prompt.repo },
-            branch: BranchStatusView {
-                model: prompt.branch,
-            },
-            local: LocalStatusView {
-                model: prompt.local,
-            },
+            repo: RepoStatusView { model: p.repo },
+            branch: BranchStatusView { model: p.branch },
+            local: LocalStatusView { model: p.local },
         }
     }
 }
@@ -70,8 +68,12 @@ impl Display for LocalStatusView {
     }
 }
 
-pub fn prompt(_repo: &Repository) -> R<Prompt> {
-    Err("TODO".to_owned())
+pub fn prompt(repo: Repository) -> R<Prompt> {
+    Ok(Prompt {
+        repo: repo_status(&repo)?,
+        branch: branch_status(&repo)?,
+        local: local_status(&repo)?,
+    })
 }
 
 #[derive(Clone, Debug)]
