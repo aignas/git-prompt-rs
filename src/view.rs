@@ -1,7 +1,23 @@
 use super::model::*;
 use std::fmt::{self, Display, Formatter};
 
-pub struct Colors {}
+use ansi_term::Colour;
+
+pub struct Colors {
+    pub default: Colour,
+    pub ok: Colour,
+    pub high: Colour,
+    pub normal: Colour,
+    pub low: Colour,
+}
+
+pub const DEFAULT_COLORS: Colors = Colors {
+    default: Colour::Fixed(7),
+    ok: Colour::Fixed(2),
+    high: Colour::Fixed(1),
+    normal: Colour::Fixed(3),
+    low: Colour::Fixed(4),
+};
 
 #[derive(Clone)]
 pub struct StatusSymbols {
@@ -40,14 +56,19 @@ pub struct PromptView {
 impl PromptView {
     pub fn new(p: Prompt, _c: &Colors) -> PromptView {
         PromptView {
-            repo: RepoStatusView { model: p.repo },
+            repo: RepoStatusView {
+                model: p.repo,
+                colors: None,
+            },
             branch: BranchStatusView {
                 model: p.branch,
                 symbols: DEFAULT_BRANCH_SYMBOLS,
+                colors: None,
             },
             local: LocalStatusView {
                 model: p.local,
                 symbols: DEFAULT_STATUS_SYMBOLS,
+                colors: None,
             },
         }
     }
@@ -61,6 +82,7 @@ impl Display for PromptView {
 
 pub struct RepoStatusView {
     pub model: RepoStatus,
+    pub colors: Option<Colors>,
 }
 
 impl Display for RepoStatusView {
@@ -129,6 +151,7 @@ mod repo_status_view {
 pub struct BranchStatusView {
     pub model: Option<BranchStatus>,
     pub symbols: BranchSymbols,
+    pub colors: Option<Colors>,
 }
 
 impl Display for BranchStatusView {
@@ -206,6 +229,7 @@ const LOCAL_CLEAN: LocalStatus = LocalStatus {
 pub struct LocalStatusView {
     pub model: LocalStatus,
     pub symbols: StatusSymbols,
+    pub colors: Option<Colors>,
 }
 
 impl Display for LocalStatusView {
