@@ -1,3 +1,6 @@
+extern crate clap;
+use clap::{App, Arg};
+
 mod view;
 use self::view::*;
 mod model;
@@ -6,8 +9,34 @@ use self::model::*;
 type R<T> = Result<T, String>;
 
 fn main() {
+    let matches = App::new("git_prompt")
+        .version("v0.1")
+        .author("aignas@github")
+        .about("Prints your git prompt info fast!")
+        .arg(
+            Arg::with_name("test")
+                .long("test")
+                .help("print various combinations of the prompt"),
+        )
+        .arg(
+            Arg::with_name("default_branch")
+                .short("d")
+                .long("default-branch")
+                .help("default branch to use when printing diff status")
+                .env("GIT_PROMPT_DEFAULT_BRANCH")
+                .default_value("master"),
+        )
+        .arg(
+            Arg::with_name("PATH")
+                .help("Optional path to use for getting git info")
+                .index(1)
+                .default_value("."),
+        )
+        .get_matches();
+
     let c = Colors {};
-    match get_prompt("/home/ia/.dotfiles/") {
+    let path = matches.value_of("PATH").unwrap();
+    match get_prompt(path) {
         Ok(p) => print!("{} ", PromptView::new(p, &c)),
         Err(_) => print!(" "),
     }
