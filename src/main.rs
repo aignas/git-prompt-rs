@@ -37,7 +37,7 @@ fn main() {
     let c = view::DEFAULT_COLORS;
     let path = matches.value_of("PATH").unwrap();
     match get_prompt(path) {
-        Ok(p) => print!("{} ", PromptView::new(p, &c)),
+        Ok(p) => print!("{} ", PromptView::new(p, Some(c))),
         Err(_) => print!(" "),
     }
 }
