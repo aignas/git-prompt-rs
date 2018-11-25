@@ -2,6 +2,9 @@
 
 This is a small CLI to display git info based on the current directory.
 
+[![asciicast](https://asciinema.org/a/RlvQkQ57HZ6Pcw7pNlvuLAfjd.png)](https://asciinema.org/a/RlvQkQ57HZ6Pcw7pNlvuLAfjd)
+
+
 ## Features
 
 - When counting the commit difference between the remote and the local clone it
