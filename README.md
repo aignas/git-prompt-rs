@@ -65,7 +65,7 @@ precmd() {
 
 This is still work in progress.
 
-- [ ] Add screenshots
+- [ ] Add more screenshots with different outputs
 - [ ] Add more docs
 - [ ] Add support to specify color-scheme via the CLI parameters
 - [ ] Add support to specify symbol-scheme via the CLI parameters
