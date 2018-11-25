@@ -2,7 +2,23 @@
 
 This is a small CLI to display git info based on the current directory.
 
+## Build
+
+For the time being build with cargo:
+
+```sh
+$ mkdir -p ${HOME}/bin # Ensure that this is in your path
+$ cd .../git_prompt
+$ cargo build --release
+$ cp ./target/release/git_prompt ${HOME}/bin
+```
+
 ## Setup
+
+For all options on how you can customize the output, run:
+```sh
+$ git_prompt --help
+```
 
 ### ZSH
 
@@ -20,11 +36,10 @@ precmd() {
 
 This is still work in progress.
 
-- [ ] Add docs
+- [ ] Add more docs
 - [ ] Add support to specify color-scheme via the CLI parameters
 - [ ] Add support to specify symbol-scheme via the CLI parameters
-- [ ] Add benchmarks
-- [ ] Add some e2e tests
+- [ ] Add tests with a mock git repo
 
 ## Contribute
 
