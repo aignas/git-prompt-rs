@@ -1,4 +1,5 @@
 type RepoState = git2::RepositoryState;
+type R<T> = Result<T, String>;
 
 #[derive(Clone, Debug)]
 pub struct Prompt {
@@ -59,7 +60,7 @@ impl LocalStatus {
 mod local_status {
     use super::*;
 
-    fn get_status(s: git2::Status) -> LocalStatus {
+    fn status(s: git2::Status) -> LocalStatus {
         let mut actual = LocalStatus {
             ..Default::default()
         };
@@ -73,7 +74,7 @@ mod local_status {
             untracked: 1,
             ..Default::default()
         };
-        assert_eq!(get_status(git2::Status::WT_NEW), expected);
+        assert_eq!(status(git2::Status::WT_NEW), expected);
     }
     #[test]
     fn staged() {
@@ -81,11 +82,11 @@ mod local_status {
             staged: 1,
             ..Default::default()
         };
-        assert_eq!(get_status(git2::Status::INDEX_NEW), expected);
-        assert_eq!(get_status(git2::Status::INDEX_MODIFIED), expected);
-        assert_eq!(get_status(git2::Status::INDEX_DELETED), expected);
-        assert_eq!(get_status(git2::Status::INDEX_RENAMED), expected);
-        assert_eq!(get_status(git2::Status::INDEX_TYPECHANGE), expected);
+        assert_eq!(status(git2::Status::INDEX_NEW), expected);
+        assert_eq!(status(git2::Status::INDEX_MODIFIED), expected);
+        assert_eq!(status(git2::Status::INDEX_DELETED), expected);
+        assert_eq!(status(git2::Status::INDEX_RENAMED), expected);
+        assert_eq!(status(git2::Status::INDEX_TYPECHANGE), expected);
     }
     #[test]
     fn unstaged() {
@@ -93,10 +94,10 @@ mod local_status {
             unstaged: 1,
             ..Default::default()
         };
-        assert_eq!(get_status(git2::Status::WT_MODIFIED), expected);
-        assert_eq!(get_status(git2::Status::WT_DELETED), expected);
-        assert_eq!(get_status(git2::Status::WT_RENAMED), expected);
-        assert_eq!(get_status(git2::Status::WT_TYPECHANGE), expected);
+        assert_eq!(status(git2::Status::WT_MODIFIED), expected);
+        assert_eq!(status(git2::Status::WT_DELETED), expected);
+        assert_eq!(status(git2::Status::WT_RENAMED), expected);
+        assert_eq!(status(git2::Status::WT_TYPECHANGE), expected);
     }
     #[test]
     fn conflict() {
@@ -104,7 +105,7 @@ mod local_status {
             unmerged: 1,
             ..Default::default()
         };
-        assert_eq!(get_status(git2::Status::CONFLICTED), expected);
+        assert_eq!(status(git2::Status::CONFLICTED), expected);
     }
     #[test]
     fn partial_stage() {
@@ -113,8 +114,108 @@ mod local_status {
             unstaged: 1,
             ..Default::default()
         };
-        let mut status = git2::Status::WT_MODIFIED;
-        status.insert(git2::Status::INDEX_MODIFIED);
-        assert_eq!(get_status(status), expected);
+        let mut s = git2::Status::WT_MODIFIED;
+        s.insert(git2::Status::INDEX_MODIFIED);
+        assert_eq!(status(s), expected);
     }
+}
+
+pub trait Repo {
+    fn state(&self) -> git2::RepositoryState;
+    fn head(&self) -> Result<git2::Reference, git2::Error>;
+    fn statuses(
+        &self,
+        options: Option<&mut git2::StatusOptions>,
+    ) -> Result<git2::Statuses, git2::Error>;
+    fn find_branch(
+        &self,
+        name: &str,
+        branch_type: git2::BranchType,
+    ) -> Result<git2::Branch, git2::Error>;
+    fn revwalk(&self) -> Result<git2::Revwalk, git2::Error>;
+}
+
+impl Repo for git2::Repository {
+    fn state(&self) -> git2::RepositoryState {
+        self.state()
+    }
+    fn head(&self) -> Result<git2::Reference, git2::Error> {
+        self.head()
+    }
+    fn statuses(
+        &self,
+        options: Option<&mut git2::StatusOptions>,
+    ) -> Result<git2::Statuses, git2::Error> {
+        self.statuses(options)
+    }
+    fn find_branch(
+        &self,
+        name: &str,
+        branch_type: git2::BranchType,
+    ) -> Result<git2::Branch, git2::Error> {
+        self.find_branch(name, branch_type)
+    }
+    fn revwalk(&self) -> Result<git2::Revwalk, git2::Error> {
+        self.revwalk()
+    }
+}
+
+pub fn repo_status(repo: &Repo) -> R<RepoStatus> {
+    Ok(RepoStatus {
+        branch: repo
+            .head()
+            .or_else(|e| Err(format!("{:?}", e)))
+            .map(|r| r.shorthand().map(String::from))?,
+        state: repo.state(),
+    })
+}
+
+pub fn branch_status(repo: &Repo, name: &str, default: &str) -> R<BranchStatus> {
+    let name = get_remote_ref(repo, name).or_else(|_| get_remote_ref(repo, default))?;
+    Ok(BranchStatus {
+        ahead: diff(repo, &name, "HEAD")?,
+        behind: diff(repo, "HEAD", &name)?,
+    })
+}
+
+fn get_remote_ref(repo: &Repo, name: &str) -> R<String> {
+    let br = repo
+        .find_branch(name, git2::BranchType::Local)
+        .or_else(|e| Err(format!("{:?}", e)))?;
+    let upstream = br.upstream().or_else(|e| Err(format!("{:?}", e)))?;
+
+    let reference = upstream.into_reference();
+    reference
+        .name()
+        .ok_or("failed to get remote branch name".to_owned())
+        .map(String::from)
+}
+
+fn diff(repo: &Repo, from: &str, to: &str) -> R<usize> {
+    let mut revwalk = repo.revwalk().or_else(|e| Err(format!("{:?}", e)))?;
+    revwalk
+        .push_range(&format!("{}..{}", from, to))
+        .or_else(|e| Err(format!("{:?}", e)))?;
+
+    let c = revwalk.count();
+    Ok(c)
+}
+
+pub fn local_status(repo: &Repo) -> R<LocalStatus> {
+    let mut opts = git2::StatusOptions::new();
+    opts.include_untracked(true)
+        .recurse_untracked_dirs(false)
+        .renames_head_to_index(true);
+
+    let statuses = repo
+        .statuses(Some(&mut opts))
+        .or_else(|e| Err(format!("{:?}", e)))?;
+
+    let mut status = LocalStatus {
+        ..Default::default()
+    };
+    for s in statuses.iter().map(|e| e.status()) {
+        status.increment(s)
+    }
+    Ok(status)
 }

@@ -12,6 +12,7 @@ pub struct Colors {
     pub low: Option<Color>,
 }
 
+#[cfg(test)]
 pub const NO_COLORS: Colors = Colors {
     default: None,
     ok: None,
@@ -22,10 +23,23 @@ pub const NO_COLORS: Colors = Colors {
 
 pub const DEFAULT_COLORS: Colors = Colors {
     default: Some(Color::Fixed(7)),
-    ok: Some(Color::Fixed(2)),
-    high: Some(Color::Fixed(1)),
-    normal: Some(Color::Fixed(3)),
-    low: Some(Color::Fixed(4)),
+    ok: Some(Color::Green),
+    high: Some(Color::Red),
+    normal: Some(Color::Yellow),
+    low: Some(Color::Fixed(252)),
+};
+
+static DEFAULT_STATUS_SYMBOLS: StatusSymbols = StatusSymbols {
+    nothing: "✔",
+    staged: "●",
+    unmerged: "✖",
+    unstaged: "✚",
+    untracked: "…",
+};
+
+static DEFAULT_BRANCH_SYMBOLS: BranchSymbols = BranchSymbols {
+    ahead: "↑",
+    behind: "↓",
 };
 
 #[derive(Clone)]
@@ -37,24 +51,11 @@ pub struct StatusSymbols<'a> {
     pub untracked: &'a str,
 }
 
-static DEFAULT_STATUS_SYMBOLS: StatusSymbols = StatusSymbols {
-    nothing: "✔",
-    staged: "●",
-    unmerged: "✖",
-    unstaged: "✚",
-    untracked: "…",
-};
-
 #[derive(Clone)]
 pub struct BranchSymbols<'a> {
     pub ahead: &'a str,
     pub behind: &'a str,
 }
-
-static DEFAULT_BRANCH_SYMBOLS: BranchSymbols = BranchSymbols {
-    ahead: "↑",
-    behind: "↓",
-};
 
 pub struct PromptView<'a> {
     pub repo: RepoStatusView,
@@ -108,11 +109,20 @@ impl Display for RepoStatusView {
             git2::RepositoryState::RebaseMerge => "rebase-m",
             _ => "",
         };
-        match (&self.model.branch, s) {
-            (Some(a), "") => write!(f, "{}", a),
-            (Some(a), b) => write!(f, "{} {}", a, b),
-            (None, "") => Ok(()),
-            (None, b) => write!(f, "{}", b),
+        let s = if s == "" { None } else { Some(s) };
+        let s = s.map(|text| View {
+            text: text,
+            color: self.colors.high,
+        });
+        let b = self.model.branch.as_ref().map(|b| View {
+            text: b,
+            color: self.colors.normal,
+        });
+        match (b, s) {
+            (None, None) => Ok(()),
+            (None, Some(a)) => write!(f, "{}", a),
+            (Some(a), None) => write!(f, "{}", a),
+            (Some(a), Some(b)) => write!(f, "{} {}", a, b),
         }
     }
 }
@@ -258,10 +268,11 @@ pub struct LocalStatusView<'a> {
 impl<'a> Display for LocalStatusView<'a> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         if LOCAL_CLEAN == self.model {
-            match &self.colors.ok {
-                Some(c) => write!(f, "{}", c.paint(self.symbols.nothing)),
-                None => write!(f, "{}", self.symbols.nothing),
-            }
+            let v = View {
+                text: self.symbols.nothing,
+                color: self.colors.ok,
+            };
+            write!(f, "{}", v)
         } else {
             let unmerged = StatView {
                 symbol: self.symbols.unmerged,
@@ -338,6 +349,52 @@ mod local_status_view {
     }
 }
 
+pub struct View<'a> {
+    pub text: &'a str,
+    pub color: Option<Color>,
+}
+
+impl<'a> Display for View<'a> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self.color {
+            Some(c) => write!(f, "{}", c.paint(self.text)),
+            None => write!(f, "{}", self.text),
+        }
+    }
+}
+
+#[cfg(test)]
+mod simple_view_tests {
+    use super::View;
+    use ansi_term::Color;
+
+    fn given(text: &str, c: Option<Color>) -> String {
+        let v = View {
+            text: text,
+            color: c,
+        };
+        format!("{}", v)
+    }
+
+    #[test]
+    fn correct_text() {
+        assert_eq!(given("foo", None), "foo");
+        assert_eq!(given("bar", None), "bar");
+    }
+
+    #[test]
+    fn correct_color() {
+        assert_eq!(
+            given("foo", Some(Color::Fixed(1))),
+            "\u{1b}[38;5;1mfoo\u{1b}[0m"
+        );
+        assert_eq!(
+            given("foo", Some(Color::Fixed(2))),
+            "\u{1b}[38;5;2mfoo\u{1b}[0m"
+        );
+    }
+}
+
 pub struct StatView<'a> {
     pub symbol: &'a str,
     pub n: usize,
@@ -352,6 +409,52 @@ impl<'a> Display for StatView<'a> {
                 Some(c) => write!(f, "{}{}", c.paint(self.symbol), n),
                 None => write!(f, "{}{}", self.symbol, n),
             },
+        }
+    }
+}
+
+#[cfg(test)]
+mod stat_view_tests {
+    use super::StatView;
+    use ansi_term::Color;
+
+    fn given(prefix: &str, n: usize, c: Option<Color>) -> String {
+        let v = StatView {
+            symbol: prefix,
+            n: n,
+            color: c,
+        };
+        format!("{}", v)
+    }
+
+    #[test]
+    fn no_text() {
+        assert_eq!(given("foo", 0, None), "");
+        assert_eq!(given("bar", 0, None), "");
+        assert_eq!(given("foo", 0, Some(Color::Red)), "");
+    }
+
+    #[test]
+    fn text() {
+        assert_eq!(given("foo", 1, None), "foo1");
+        assert_eq!(given("bar", 1, None), "bar1");
+    }
+
+    #[test]
+    fn number() {
+        assert_eq!(given("foo", 1, None), "foo1");
+        assert_eq!(given("foo", 2, None), "foo2");
+        assert_eq!(given("foo", 3, None), "foo3");
+    }
+
+    #[test]
+    fn color() {
+        let colors = vec![1, 2, 3];
+        for c in colors {
+            assert_eq!(
+                given("foo", 1, Some(Color::Fixed(c))),
+                format!("{}1", Color::Fixed(c).paint("foo"))
+            );
         }
     }
 }
