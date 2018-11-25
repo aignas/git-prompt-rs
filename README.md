@@ -25,9 +25,7 @@ $ cp ./target/release/git_prompt ${HOME}/bin
 ## Command-line options
 
 ```
-Command-line options
-
-t_prompt v0.1
+git_prompt v0.1
 aignas@github
 Prints your git prompt info fast!
 
@@ -36,7 +34,6 @@ USAGE:
 
 FLAGS:
     -h, --help       Prints help information
-        --test       print various combinations of the prompt
     -V, --version    Prints version information
 
 OPTIONS:
