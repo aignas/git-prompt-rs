@@ -3,7 +3,6 @@ use clap::{App, Arg};
 
 mod model;
 mod view;
-use model::R;
 
 fn main() {
     let matches = App::new("git_prompt")
@@ -36,19 +35,19 @@ fn main() {
 
     match git2::Repository::discover(path)
         .or_else(|e| Err(format!("{:?}", e)))
-        .map(prompt)
+        .and_then(|r| prompt(r, "master"))
     {
         Ok(p) => print!("{} ", view::PromptView::new(p, c)),
         Err(_) => print!(" "),
     }
 }
 
-pub fn prompt<T: model::Repo>(repo: T) -> R<model::Prompt> {
+pub fn prompt<T: model::Repo>(repo: T, default: &str) -> model::R<model::Prompt> {
     let r = model::repo_status(&repo)?;
-    let b = match &r.branch {
-        Some(b) => model::branch_status(&repo, b, "master").ok(),
-        None => None,
-    };
+    let b = r
+        .branch
+        .as_ref()
+        .and_then(|b| model::branch_status(&repo, b, default).ok());
     Ok(model::Prompt {
         repo: r,
         branch: b,

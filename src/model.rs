@@ -1,5 +1,5 @@
 type RepoState = git2::RepositoryState;
-type R<T> = Result<T, String>;
+pub type R<T> = Result<T, String>;
 
 #[derive(Clone, Debug)]
 pub struct Prompt {
