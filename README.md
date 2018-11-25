@@ -2,8 +2,7 @@
 
 This is a small CLI to display git info based on the current directory.
 
-[![asciicast](https://asciinema.org/a/RlvQkQ57HZ6Pcw7pNlvuLAfjd.png)](https://asciinema.org/a/RlvQkQ57HZ6Pcw7pNlvuLAfjd)
-
+<script src="https://asciinema.org/a/RlvQkQ57HZ6Pcw7pNlvuLAfjd.js&theme=monokai&data-size=small" id="asciicast-RlvQkQ57HZ6Pcw7pNlvuLAfjd"></script>
 
 ## Features
 
