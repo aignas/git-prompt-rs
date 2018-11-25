@@ -10,11 +10,6 @@ fn main() {
         .author("aignas@github")
         .about("Prints your git prompt info fast!")
         .arg(
-            Arg::with_name("test")
-                .long("test")
-                .help("print various combinations of the prompt"),
-        )
-        .arg(
             Arg::with_name("default_branch")
                 .short("d")
                 .long("default-branch")
