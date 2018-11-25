@@ -1,6 +1,6 @@
 extern crate clap;
+use ansi_term::Color;
 use clap::{App, Arg};
-
 mod model;
 mod view;
 
@@ -30,16 +30,36 @@ fn main() {
         )
         .get_matches();
 
-    let c = view::DEFAULT_COLORS;
+    let c = view::Colors {
+        default: Some(Color::Fixed(7)),
+        ok: Some(Color::Green),
+        high: Some(Color::Red),
+        normal: Some(Color::Yellow),
+        low: Some(Color::Fixed(252)),
+    };
+
+    let ss = view::StatusSymbols {
+        nothing: "✔",
+        staged: "●",
+        unmerged: "✖",
+        unstaged: "✚",
+        untracked: "…",
+    };
+
+    let bs = view::BranchSymbols {
+        ahead: "↑",
+        behind: "↓",
+    };
     let path = matches.value_of("PATH").unwrap();
 
-    match git2::Repository::discover(path)
+    let out = match git2::Repository::discover(path)
         .or_else(|e| Err(format!("{:?}", e)))
         .and_then(|r| prompt(r, "master"))
     {
-        Ok(p) => print!("{} ", view::PromptView::new(p, c)),
-        Err(_) => print!(" "),
-    }
+        Ok(p) => view::print(p, c, bs, ss),
+        Err(_) => String::from(" "),
+    };
+    print!("{}", out)
 }
 
 pub fn prompt<T: model::Repo>(repo: T, default: &str) -> model::R<model::Prompt> {
