@@ -1,3 +1,5 @@
+#![feature(test)]
+
 type RepoState = git2::RepositoryState;
 pub type R<T> = Result<T, String>;
 
@@ -132,7 +134,11 @@ pub trait Repo {
         name: &str,
         branch_type: git2::BranchType,
     ) -> Result<git2::Branch, git2::Error>;
-    fn revwalk(&self) -> Result<git2::Revwalk, git2::Error>;
+    fn graph_ahead_behind(
+        &self,
+        local: git2::Oid,
+        upstream: git2::Oid,
+    ) -> Result<(usize, usize), git2::Error>;
 }
 
 impl Repo for git2::Repository {
@@ -155,8 +161,12 @@ impl Repo for git2::Repository {
     ) -> Result<git2::Branch, git2::Error> {
         self.find_branch(name, branch_type)
     }
-    fn revwalk(&self) -> Result<git2::Revwalk, git2::Error> {
-        self.revwalk()
+    fn graph_ahead_behind(
+        &self,
+        local: git2::Oid,
+        upstream: git2::Oid,
+    ) -> Result<(usize, usize), git2::Error> {
+        self.graph_ahead_behind(local, upstream)
     }
 }
 
@@ -170,35 +180,58 @@ pub fn repo_status(repo: &Repo) -> R<RepoStatus> {
     })
 }
 
+#[cfg(test)]
+mod bench_repo_status {
+    use super::*;
+    use crate::test::Bencher;
+
+    #[bench]
+    fn bench(b: &mut Bencher) {
+        let r = git2::Repository::discover(".");
+        b.iter(|| {
+            r.as_ref()
+                .or_else(|e| Err(format!("{:?}", e)))
+                .and_then(|r| repo_status(r))
+        });
+    }
+}
+
 pub fn branch_status(repo: &Repo, name: &str, default: &str) -> R<BranchStatus> {
-    let name = get_remote_ref(repo, name).or_else(|_| get_remote_ref(repo, default))?;
+    let upstream = get_remote_ref(repo, name).or_else(|_| get_remote_ref(repo, default))?;
+    let (ahead, behind) = repo
+        .graph_ahead_behind(repo.head().unwrap().target().unwrap(), upstream)
+        .or_else(|e| Err(format!("{:?}", e)))?;
     Ok(BranchStatus {
-        ahead: diff(repo, &name, "HEAD")?,
-        behind: diff(repo, "HEAD", &name)?,
+        ahead: ahead,
+        behind: behind,
     })
 }
 
-fn get_remote_ref(repo: &Repo, name: &str) -> R<String> {
+fn get_remote_ref(repo: &Repo, name: &str) -> R<git2::Oid> {
     let br = repo
         .find_branch(name, git2::BranchType::Local)
         .or_else(|e| Err(format!("{:?}", e)))?;
     let upstream = br.upstream().or_else(|e| Err(format!("{:?}", e)))?;
-
     let reference = upstream.into_reference();
     reference
-        .name()
+        .target()
         .ok_or("failed to get remote branch name".to_owned())
-        .map(String::from)
 }
 
-fn diff(repo: &Repo, from: &str, to: &str) -> R<usize> {
-    let mut revwalk = repo.revwalk().or_else(|e| Err(format!("{:?}", e)))?;
-    revwalk
-        .push_range(&format!("{}..{}", from, to))
-        .or_else(|e| Err(format!("{:?}", e)))?;
+#[cfg(test)]
+mod bench_branch_status {
+    use super::*;
+    use crate::test::Bencher;
 
-    let c = revwalk.count();
-    Ok(c)
+    #[bench]
+    fn bench(b: &mut Bencher) {
+        let r = git2::Repository::discover(".");
+        b.iter(|| {
+            r.as_ref()
+                .or_else(|e| Err(format!("{:?}", e)))
+                .and_then(|r| branch_status(r, "master", "master"))
+        });
+    }
 }
 
 pub fn local_status(repo: &Repo) -> R<LocalStatus> {
@@ -218,4 +251,20 @@ pub fn local_status(repo: &Repo) -> R<LocalStatus> {
         status.increment(s)
     }
     Ok(status)
+}
+
+#[cfg(test)]
+mod bench_local_status {
+    use super::*;
+    use crate::test::Bencher;
+
+    #[bench]
+    fn bench(b: &mut Bencher) {
+        let r = git2::Repository::discover(".");
+        b.iter(|| {
+            r.as_ref()
+                .or_else(|e| Err(format!("{:?}", e)))
+                .and_then(|r| local_status(r))
+        });
+    }
 }
