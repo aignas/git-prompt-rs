@@ -199,7 +199,13 @@ mod bench_repo_status {
 pub fn branch_status(repo: &Repo, name: &str, default: &str) -> R<BranchStatus> {
     let upstream = get_remote_ref(repo, name).or_else(|_| get_remote_ref(repo, default))?;
     let (ahead, behind) = repo
-        .graph_ahead_behind(repo.head().unwrap().target().unwrap(), upstream)
+        .graph_ahead_behind(
+            repo.head()
+                .or_else(|e| Err(format!("{:?}", e)))?
+                .target()
+                .ok_or("Failed to get target".to_owned())?,
+            upstream,
+        )
         .or_else(|e| Err(format!("{:?}", e)))?;
     Ok(BranchStatus {
         ahead: ahead,
@@ -208,12 +214,11 @@ pub fn branch_status(repo: &Repo, name: &str, default: &str) -> R<BranchStatus> 
 }
 
 fn get_remote_ref(repo: &Repo, name: &str) -> R<git2::Oid> {
-    let br = repo
-        .find_branch(name, git2::BranchType::Local)
-        .or_else(|e| Err(format!("{:?}", e)))?;
-    let upstream = br.upstream().or_else(|e| Err(format!("{:?}", e)))?;
-    let reference = upstream.into_reference();
-    reference
+    repo.find_branch(name, git2::BranchType::Local)
+        .or_else(|e| Err(format!("{:?}", e)))?
+        .upstream()
+        .or_else(|e| Err(format!("{:?}", e)))?
+        .get()
         .target()
         .ok_or("failed to get remote branch name".to_owned())
 }
