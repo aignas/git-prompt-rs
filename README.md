@@ -1,5 +1,7 @@
 # Git prompt
 
+[![Build Status](https://travis-ci.org/aignas/git_prompt.svg?branch=master)](https://travis-ci.org/aignas/git_prompt)
+
 This is a small CLI to display git info based on the current directory.
 
 <a href="https://asciinema.org/a/RlvQkQ57HZ6Pcw7pNlvuLAfjd" target="_blank"><img src="https://asciinema.org/a/RlvQkQ57HZ6Pcw7pNlvuLAfjd.svg" width="600"/></a>
