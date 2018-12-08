@@ -63,18 +63,6 @@ precmd() {
 }
 ```
 
-## TODO
-
-This is still work in progress.
-
-- [ ] Add more screenshots with different outputs
-- [ ] Add more docs
-- [ ] Add support to specify color-scheme via the CLI parameters
-- [ ] Add support to specify symbol-scheme via the CLI parameters
-- [ ] Add tests with a mock git repo
-- [ ] Add a `diverged` state for the ahead/behind status as described:
-     <https://brson.github.io/2017/04/05/minimally-nice-maintainer>
-
 ## Contribute
 
 Pull requests are welcome.
