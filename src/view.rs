@@ -64,7 +64,7 @@ mod print_tests {
             unstaged: "u",
             untracked: ".",
         };
-        assert_eq!(print(p, c, bs, ss), "master ↑1↓4 ✓");
+        assert_eq!(print(p, c, bs, ss), "master ↑1↓4 ✓ ");
     }
 }
 
