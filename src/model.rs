@@ -1,5 +1,3 @@
-#![feature(test)]
-
 type RepoState = git2::RepositoryState;
 pub type R<T> = Result<T, String>;
 
@@ -33,7 +31,7 @@ pub struct LocalStatus {
 }
 
 impl LocalStatus {
-    pub fn increment(&mut self, status: git2::Status) {
+    pub fn add(&mut self, status: git2::Status) {
         if status.is_wt_new() {
             self.untracked += 1;
         }
@@ -66,7 +64,7 @@ mod local_status {
         let mut actual = LocalStatus {
             ..Default::default()
         };
-        actual.increment(s);
+        actual.add(s);
         actual
     }
 
@@ -197,14 +195,13 @@ mod bench_repo_status {
 }
 
 pub fn branch_status(repo: &Repo, name: &str, default: &str) -> R<BranchStatus> {
-    let upstream = get_remote_ref(repo, name).or_else(|_| get_remote_ref(repo, default))?;
     let (ahead, behind) = repo
         .graph_ahead_behind(
             repo.head()
                 .or_else(|e| Err(format!("{:?}", e)))?
                 .target()
                 .ok_or("Failed to get target".to_owned())?,
-            upstream,
+            get_remote_ref(repo, name).or_else(|_| get_remote_ref(repo, default))?,
         )
         .or_else(|e| Err(format!("{:?}", e)))?;
     Ok(BranchStatus {
@@ -253,7 +250,7 @@ pub fn local_status(repo: &Repo) -> R<LocalStatus> {
         ..Default::default()
     };
     for s in statuses.iter().map(|e| e.status()) {
-        status.increment(s)
+        status.add(s)
     }
     Ok(status)
 }
