@@ -173,18 +173,74 @@ pub fn repo_status(repo: &Repo) -> R<RepoStatus> {
         branch: repo
             .head()
             .or_else(|e| Err(format!("{:?}", e)))
-            .map(|r| match r.shorthand() {
-                Some("HEAD") | None => Some(String::from("detached")),
-                Some(b) => Some(b.to_owned()),
-            })?,
+            .map(|r| get_repo_rev(&r))?,
         state: repo.state(),
     })
 }
 
+fn get_repo_rev(r: &Reference) -> Option<String> {
+    match r.shorthand() {
+        Some("HEAD") | None => r.target().map(|t| {
+            let mut s = t.to_string();
+            s.truncate(8);
+            format!("{}", s)
+        }),
+        Some(b) => Some(b.to_owned()),
+    }
+}
+
+pub trait Reference {
+    fn shorthand(&self) -> Option<&str>;
+    fn target(&self) -> Option<git2::Oid>;
+}
+
+impl<'repo> Reference for git2::Reference<'repo> {
+    fn shorthand(&self) -> Option<&str> {
+        self.shorthand()
+    }
+    fn target(&self) -> Option<git2::Oid> {
+        self.target()
+    }
+}
+
 #[cfg(test)]
-mod bench_repo_status {
+mod repo_status {
     use super::*;
     use crate::test::Bencher;
+
+    struct TestReference<'a> {
+        shorthand: Option<&'a str>,
+        target: Option<git2::Oid>,
+    }
+
+    impl<'a> Reference for TestReference<'a> {
+        fn shorthand(&self) -> Option<&str> {
+            self.shorthand
+        }
+        fn target(&self) -> Option<git2::Oid> {
+            self.target
+        }
+    }
+
+    #[test]
+    fn get_shorthand() {
+        let r = TestReference {
+            shorthand: Some("foo"),
+            target: None,
+        };
+
+        assert_eq!(get_repo_rev(&r), Some(String::from("foo")));
+    }
+
+    #[test]
+    fn get_detached() {
+        let r = TestReference {
+            shorthand: Some("HEAD"),
+            target: git2::Oid::from_str("ea026298c4856b690bc338e917235059fb1fe22a").ok(),
+        };
+
+        assert_eq!(get_repo_rev(&r), Some(String::from("ea026298")));
+    }
 
     #[bench]
     fn bench(b: &mut Bencher) {
