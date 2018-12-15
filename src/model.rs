@@ -173,7 +173,10 @@ pub fn repo_status(repo: &Repo) -> R<RepoStatus> {
         branch: repo
             .head()
             .or_else(|e| Err(format!("{:?}", e)))
-            .map(|r| r.shorthand().map(String::from))?,
+            .map(|r| match r.shorthand() {
+                Some("HEAD") | None => Some(String::from("detached")),
+                Some(b) => Some(b.to_owned()),
+            })?,
         state: repo.state(),
     })
 }
