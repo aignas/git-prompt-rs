@@ -246,7 +246,6 @@ mod bench_main {
     fn bench_view(b: &mut Bencher) {
         b.iter(|| {
             let c = view::Colors {
-                default: Some(Color::Fixed(7)),
                 ok: Some(Color::Green),
                 high: Some(Color::Red),
                 normal: Some(Color::Yellow),
