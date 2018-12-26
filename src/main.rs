@@ -22,6 +22,18 @@ fn main() {
                 .default_value("master"),
         )
         .arg(
+            Arg::with_name("status_symbols")
+                .long("status-symbols")
+                .help("status symbols to be used for the output.  The format is 'ok|staged|unmerged|unstaged|untracked'")
+                .default_value("✔|●|✖|✚|…"),
+        )
+        .arg(
+            Arg::with_name("branch_symbols")
+                .long("branch-symbols")
+                .help("branch symbols to be used for the output.  The format is 'ahead|behind'")
+                .default_value("↑|↓"),
+        )
+        .arg(
             Arg::with_name("examples")
                 .short("x")
                 .help("print example output"),
@@ -36,25 +48,14 @@ fn main() {
 
     let c = view::Colors {
         default: Some(Color::Fixed(7)),
-        ok: Some(Color::Green),
-        high: Some(Color::Red),
-        normal: Some(Color::Yellow),
+        ok: Some(Color::Fixed(2)),
+        high: Some(Color::Fixed(1)),
+        normal: Some(Color::Fixed(3)),
         low: Some(Color::Fixed(252)),
     };
 
-    let ss = view::StatusSymbols {
-        nothing: "✔",
-        staged: "●",
-        unmerged: "✖",
-        unstaged: "✚",
-        untracked: "…",
-    };
-
-    let bs = view::BranchSymbols {
-        ahead: "↑",
-        behind: "↓",
-    };
-    let path = matches.value_of("PATH").unwrap();
+    let ss = parse_ss(matches.value_of("status_symbols").unwrap()).unwrap();
+    let bs = parse_bs(matches.value_of("branch_symbols").unwrap()).unwrap();
 
     if matches.is_present("examples") {
         let master = Some("master");
@@ -72,6 +73,7 @@ fn main() {
         return;
     }
 
+    let path = matches.value_of("PATH").unwrap();
     let out = match git2::Repository::discover(path)
         .or_else(|e| Err(format!("{:?}", e)))
         .and_then(|r| prompt(&r, "master"))
@@ -80,6 +82,33 @@ fn main() {
         Err(_) => String::from(" "),
     };
     print!("{}", out)
+}
+
+fn parse_ss(input: &str) -> model::R<view::StatusSymbols> {
+    let parts: Vec<&str> = input.split("|").collect();
+
+    match parts.len() {
+        5 => Ok(view::StatusSymbols {
+            nothing: parts[0],
+            staged: parts[1],
+            unmerged: parts[2],
+            unstaged: parts[3],
+            untracked: parts[4],
+        }),
+        _ => Err(format!("Unknown input format: {}", input)),
+    }
+}
+
+fn parse_bs(input: &str) -> model::R<view::BranchSymbols> {
+    let parts: Vec<&str> = input.split("|").collect();
+
+    match parts.len() {
+        2 => Ok(view::BranchSymbols {
+            ahead: parts[0],
+            behind: parts[1],
+        }),
+        _ => Err(format!("Unknown input format: {}", input)),
+    }
 }
 
 struct Examples {

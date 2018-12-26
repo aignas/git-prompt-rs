@@ -45,8 +45,12 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
+        --branch-symbols <branch_symbols>    branch symbols to be used for the output.  The format is 'ahead|behind'
+                                             [default: ↑|↓]
     -d, --default-branch <default_branch>    default branch to use when printing diff status [env:
                                              GIT_PROMPT_DEFAULT_BRANCH=]  [default: master]
+        --status-symbols <status_symbols>    status symbols to be used for the output.  The format is
+                                             'ok|staged|unmerged|unstaged|untracked' [default: ✔|●|✖|✚|…]
 
 ARGS:
     <PATH>    Optional path to use for getting git info [default: .]
