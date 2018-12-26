@@ -60,14 +60,38 @@ fn main() {
         let master = Some("master");
         let clean = git2::RepositoryState::Clean;
         let rebase = git2::RepositoryState::Rebase;
+
+        fn b(ahead: usize, behind: usize) -> Option<model::BranchStatus> {
+            Some(model::BranchStatus { ahead, behind })
+        }
+        fn s(
+            staged: usize,
+            unstaged: usize,
+            unmerged: usize,
+            untracked: usize,
+        ) -> model::LocalStatus {
+            model::LocalStatus {
+                staged,
+                unstaged,
+                unmerged,
+                untracked,
+            }
+        }
+
         Examples::new()
-            .with("ok", master, clean, 0, 0, 0, 0, 0, 0)
-            .with("new", None, clean, 0, 0, 0, 3, 0, 0)
-            .with("stage", master, clean, 0, 0, 3, 0, 0, 0)
-            .with("partial", master, clean, 0, 0, 3, 12, 0, 0)
-            .with("conflicts", Some("a83e2a3f"), rebase, 0, 3, 0, 2, 1, 0)
-            .with("rebase", master, rebase, 0, 3, 0, 3, 0, 0)
-            .with("diverged", master, rebase, 12, 3, 0, 0, 0, 3)
+            .add("new", None, clean, None, s(0, 3, 0, 0))
+            .add("ok", master, clean, b(0, 0), s(0, 0, 0, 0))
+            .add("stage", master, clean, b(0, 0), s(3, 0, 0, 0))
+            .add("partial", master, clean, b(0, 0), s(3, 12, 0, 0))
+            .add(
+                "conflicts",
+                Some("a83e2a3f"),
+                rebase,
+                b(0, 3),
+                s(0, 2, 1, 0),
+            )
+            .add("rebase", master, rebase, b(0, 3), s(0, 3, 0, 0))
+            .add("diverged", master, rebase, b(12, 3), s(0, 0, 0, 3))
             .print(&c, &bs, &ss);
         return;
     }
@@ -84,20 +108,17 @@ fn main() {
 }
 
 fn parse_colors(input: &str) -> model::R<view::Colors> {
-    match input {
+    if input == "simple" {
         // Add colorscheme presets here
-        "simple" => {
-            return Ok(view::Colors {
-                ok: Some(Color::Fixed(2)),
-                high: Some(Color::Fixed(1)),
-                normal: Some(Color::Fixed(3)),
-            });
-        }
-        _ => {}
+        return Ok(view::Colors {
+            ok: Some(Color::Fixed(2)),
+            high: Some(Color::Fixed(1)),
+            normal: Some(Color::Fixed(3)),
+        });
     }
 
     let parts: Vec<u8> = input
-        .split(",")
+        .split(',')
         .map(|s| s.parse::<u8>().unwrap_or(0))
         .collect();
 
@@ -115,7 +136,7 @@ fn parse_colors(input: &str) -> model::R<view::Colors> {
 }
 
 fn parse_ss(input: &str) -> model::R<view::StatusSymbols> {
-    let parts: Vec<&str> = input.split("|").collect();
+    let parts: Vec<&str> = input.split('|').collect();
 
     match parts.len() {
         5 => Ok(view::StatusSymbols {
@@ -130,7 +151,7 @@ fn parse_ss(input: &str) -> model::R<view::StatusSymbols> {
 }
 
 fn parse_bs(input: &str) -> model::R<view::BranchSymbols> {
-    let parts: Vec<&str> = input.split("|").collect();
+    let parts: Vec<&str> = input.split('|').collect();
 
     match parts.len() {
         2 => Ok(view::BranchSymbols {
@@ -153,41 +174,26 @@ impl Examples {
         }
     }
 
-    pub fn with(
+    pub fn add(
         &mut self,
         key: &str,
         br: Option<&str>,
         state: git2::RepositoryState,
-        ahead: usize,
-        behind: usize,
-        staged: usize,
-        unstaged: usize,
-        unmerged: usize,
-        untracked: usize,
+        branch: Option<model::BranchStatus>,
+        local: model::LocalStatus,
     ) -> &mut Examples {
-        self.with_prompt(
-            key,
+        let repo = model::RepoStatus {
+            branch: br.map(|s| s.to_owned()),
+            state,
+        };
+        self.examples.insert(
+            key.to_string(),
             model::Prompt {
-                repo: model::RepoStatus {
-                    branch: br.map(|s| s.to_owned()),
-                    state: state,
-                },
-                branch: Some(model::BranchStatus {
-                    ahead: ahead,
-                    behind: behind,
-                }),
-                local: model::LocalStatus {
-                    staged: staged,
-                    unstaged: unstaged,
-                    unmerged: unmerged,
-                    untracked: untracked,
-                },
+                repo,
+                branch,
+                local,
             },
-        )
-    }
-
-    fn with_prompt(&mut self, key: &str, p: model::Prompt) -> &mut Examples {
-        self.examples.insert(key.to_string(), p);
+        );
         self
     }
 
@@ -279,7 +285,7 @@ mod bench_main {
                     untracked: 0,
                 },
             };
-            format!("{}", view::print(p, c, bs, ss))
+            view::print(p, c, bs, ss).to_string()
         });
     }
 }

@@ -4,7 +4,7 @@ rust:
 matrix:
   fast_finish: true
 before_script:
-    - rustup component add clippy
+  - rustup component add clippy
 cache: cargo
 script:
   - cargo test --verbose

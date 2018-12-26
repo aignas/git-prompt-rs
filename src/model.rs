@@ -183,7 +183,7 @@ fn get_repo_rev(r: &Reference) -> Option<String> {
         Some("HEAD") | None => r.target().map(|t| {
             let mut s = t.to_string();
             s.truncate(8);
-            format!("{}", s)
+            s.to_string()
         }),
         Some(b) => Some(b.to_owned()),
     }
@@ -259,14 +259,11 @@ pub fn branch_status(repo: &Repo, name: &str, default: &str) -> R<BranchStatus> 
             repo.head()
                 .or_else(|e| Err(format!("{:?}", e)))?
                 .target()
-                .ok_or("Failed to get target".to_owned())?,
+                .ok_or_else(|| "Failed to get target".to_owned())?,
             get_remote_ref(repo, name).or_else(|_| get_remote_ref(repo, default))?,
         )
         .or_else(|e| Err(format!("{:?}", e)))?;
-    Ok(BranchStatus {
-        ahead: ahead,
-        behind: behind,
-    })
+    Ok(BranchStatus { ahead, behind })
 }
 
 fn get_remote_ref(repo: &Repo, name: &str) -> R<git2::Oid> {
@@ -276,7 +273,7 @@ fn get_remote_ref(repo: &Repo, name: &str) -> R<git2::Oid> {
         .or_else(|e| Err(format!("{:?}", e)))?
         .get()
         .target()
-        .ok_or("failed to get remote branch name".to_owned())
+        .ok_or_else(|| "failed to get remote branch name".to_owned())
 }
 
 #[cfg(test)]

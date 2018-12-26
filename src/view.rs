@@ -271,10 +271,7 @@ mod branch_status_view {
     }
 
     fn given_some(ahead: usize, behind: usize) -> String {
-        given(Some(BranchStatus {
-            ahead: ahead,
-            behind: behind,
-        }))
+        given(Some(BranchStatus { ahead, behind }))
     }
 
     #[test]
@@ -419,12 +416,8 @@ mod simple_view_tests {
     use super::View;
     use ansi_term::Color;
 
-    fn given(text: &str, c: Option<Color>) -> String {
-        let v = View {
-            text: text,
-            color: c,
-        };
-        format!("{}", v)
+    fn given(text: &str, color: Option<Color>) -> String {
+        format!("{}", View { text, color })
     }
 
     #[test]
@@ -475,13 +468,8 @@ mod stat_view_tests {
     use super::StatView;
     use ansi_term::Color;
 
-    fn given(prefix: &str, n: usize, c: Option<Color>) -> String {
-        let v = StatView {
-            symbol: prefix,
-            n: n,
-            color: c,
-        };
-        format!("{}", v)
+    fn given(symbol: &str, n: usize, color: Option<Color>) -> String {
+        format!("{}", StatView { symbol, n, color })
     }
 
     #[test]
