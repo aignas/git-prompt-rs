@@ -34,6 +34,12 @@ fn main() {
                 .default_value("↑|↓"),
         )
         .arg(
+            Arg::with_name("colorscheme")
+                .long("colorscheme")
+                .help("colorscheme to be used.  Either a preset or comma-separated byte values.")
+                .default_value("simple"),
+        )
+        .arg(
             Arg::with_name("examples")
                 .short("x")
                 .help("print example output"),
@@ -46,14 +52,7 @@ fn main() {
         )
         .get_matches();
 
-    let c = view::Colors {
-        default: Some(Color::Fixed(7)),
-        ok: Some(Color::Fixed(2)),
-        high: Some(Color::Fixed(1)),
-        normal: Some(Color::Fixed(3)),
-        low: Some(Color::Fixed(252)),
-    };
-
+    let c = parse_colors(matches.value_of("colorscheme").unwrap()).unwrap();
     let ss = parse_ss(matches.value_of("status_symbols").unwrap()).unwrap();
     let bs = parse_bs(matches.value_of("branch_symbols").unwrap()).unwrap();
 
@@ -82,6 +81,37 @@ fn main() {
         Err(_) => String::from(" "),
     };
     print!("{}", out)
+}
+
+fn parse_colors(input: &str) -> model::R<view::Colors> {
+    match input {
+        // Add colorscheme presets here
+        "simple" => {
+            return Ok(view::Colors {
+                ok: Some(Color::Fixed(2)),
+                high: Some(Color::Fixed(1)),
+                normal: Some(Color::Fixed(3)),
+            });
+        }
+        _ => {}
+    }
+
+    let parts: Vec<u8> = input
+        .split(",")
+        .map(|s| s.parse::<u8>().unwrap_or(0))
+        .collect();
+
+    match parts.len() {
+        3 => Ok(view::Colors {
+            ok: Some(Color::Fixed(parts[0])),
+            high: Some(Color::Fixed(parts[1])),
+            normal: Some(Color::Fixed(parts[2])),
+        }),
+        l => Err(format!(
+            "Unknown custom color input: {}. Expected 4 terms, but got {}.",
+            input, l
+        )),
+    }
 }
 
 fn parse_ss(input: &str) -> model::R<view::StatusSymbols> {
@@ -220,7 +250,6 @@ mod bench_main {
                 ok: Some(Color::Green),
                 high: Some(Color::Red),
                 normal: Some(Color::Yellow),
-                low: Some(Color::Fixed(252)),
             };
 
             let ss = view::StatusSymbols {

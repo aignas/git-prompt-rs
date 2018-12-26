@@ -100,20 +100,16 @@ mod print_tests {
 
 #[derive(Clone)]
 pub struct Colors {
-    pub default: Option<Color>,
     pub ok: Option<Color>,
     pub high: Option<Color>,
     pub normal: Option<Color>,
-    pub low: Option<Color>,
 }
 
 #[cfg(test)]
 pub const NO_COLORS: Colors = Colors {
-    default: None,
     ok: None,
     high: None,
     normal: None,
-    low: None,
 };
 
 #[derive(Clone)]
@@ -335,10 +331,13 @@ impl<'a> Display for LocalStatusView<'a> {
                 n: self.model.staged,
                 color: self.colors.ok,
             };
-            let untracked = if self.model.untracked == 0 {
-                ""
-            } else {
-                self.symbols.untracked
+            let untracked = View {
+                text: if self.model.untracked == 0 {
+                    ""
+                } else {
+                    self.symbols.untracked
+                },
+                color: None,
             };
             write!(f, "{}{}{}{}", unmerged, staged, unstaged, untracked)
         }
