@@ -23,7 +23,7 @@ pub fn print(p: Prompt, c: Colors, bs: BranchSymbols, ss: StatusSymbols) -> Stri
         colors: c,
     };
     let result = format!("{} {} {} {}", repo, state, branch, local);
-    format!("{} ", respace(&result))
+    format!("{} ", respace(result.trim()))
 }
 
 fn respace(s: &str) -> String {
@@ -65,6 +65,36 @@ mod print_tests {
             untracked: ".",
         };
         assert_eq!(print(p, c, bs, ss), "master ↑1↓4 ✓ ");
+    }
+
+    #[test]
+    fn prompt_is_trimmed() {
+        let p = Prompt {
+            repo: RepoStatus {
+                branch: None,
+                state: git2::RepositoryState::Clean,
+            },
+            branch: None,
+            local: LocalStatus {
+                staged: 1,
+                unmerged: 0,
+                unstaged: 0,
+                untracked: 3,
+            },
+        };
+        let c = NO_COLORS.clone();
+        let bs = BranchSymbols {
+            ahead: "↑",
+            behind: "↓",
+        };
+        let ss = StatusSymbols {
+            nothing: "✓",
+            staged: "s",
+            unmerged: "m",
+            unstaged: "u",
+            untracked: ".",
+        };
+        assert_eq!(print(p, c, bs, ss), "s1. ");
     }
 }
 

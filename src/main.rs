@@ -22,6 +22,11 @@ fn main() {
                 .default_value("master"),
         )
         .arg(
+            Arg::with_name("examples")
+                .short("x")
+                .help("print example output"),
+        )
+        .arg(
             Arg::with_name("PATH")
                 .help("Optional path to use for getting git info")
                 .index(1)
@@ -51,6 +56,22 @@ fn main() {
     };
     let path = matches.value_of("PATH").unwrap();
 
+    if matches.is_present("examples") {
+        let master = Some("master");
+        let clean = git2::RepositoryState::Clean;
+        let rebase = git2::RepositoryState::Rebase;
+        Examples::new()
+            .with("ok", master, clean, 0, 0, 0, 0, 0, 0)
+            .with("new", None, clean, 0, 0, 0, 3, 0, 0)
+            .with("stage", master, clean, 0, 0, 3, 0, 0, 0)
+            .with("partial", master, clean, 0, 0, 3, 12, 0, 0)
+            .with("conflicts", Some("a83e2a3f"), rebase, 0, 3, 0, 2, 1, 0)
+            .with("rebase", master, rebase, 0, 3, 0, 3, 0, 0)
+            .with("diverged", master, rebase, 12, 3, 0, 0, 0, 3)
+            .print(&c, &bs, &ss);
+        return;
+    }
+
     let out = match git2::Repository::discover(path)
         .or_else(|e| Err(format!("{:?}", e)))
         .and_then(|r| prompt(&r, "master"))
@@ -59,6 +80,74 @@ fn main() {
         Err(_) => String::from(" "),
     };
     print!("{}", out)
+}
+
+struct Examples {
+    examples: std::collections::HashMap<String, model::Prompt>,
+}
+
+impl Examples {
+    pub fn new() -> Examples {
+        use std::collections::HashMap;
+        Examples {
+            examples: HashMap::new(),
+        }
+    }
+
+    pub fn with(
+        &mut self,
+        key: &str,
+        br: Option<&str>,
+        state: git2::RepositoryState,
+        ahead: usize,
+        behind: usize,
+        staged: usize,
+        unstaged: usize,
+        unmerged: usize,
+        untracked: usize,
+    ) -> &mut Examples {
+        self.with_prompt(
+            key,
+            model::Prompt {
+                repo: model::RepoStatus {
+                    branch: br.map(|s| s.to_owned()),
+                    state: state,
+                },
+                branch: Some(model::BranchStatus {
+                    ahead: ahead,
+                    behind: behind,
+                }),
+                local: model::LocalStatus {
+                    staged: staged,
+                    unstaged: unstaged,
+                    unmerged: unmerged,
+                    untracked: untracked,
+                },
+            },
+        )
+    }
+
+    fn with_prompt(&mut self, key: &str, p: model::Prompt) -> &mut Examples {
+        self.examples.insert(key.to_string(), p);
+        self
+    }
+
+    pub fn print(&self, c: &view::Colors, bs: &view::BranchSymbols, ss: &view::StatusSymbols) {
+        let max_length = self
+            .examples
+            .keys()
+            .map(|l| l.len())
+            .max()
+            .expect("failed to get the maximum example key length");
+        for (l, p) in &self.examples {
+            println!(
+                "{0:>1$}: {2}",
+                l,
+                max_length,
+                view::print(p.clone(), c.clone(), bs.clone(), ss.clone())
+            );
+        }
+    }
 }
 
 pub fn prompt<T: model::Repo>(repo: &T, default: &str) -> model::R<model::Prompt> {
