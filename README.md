@@ -6,7 +6,6 @@ This is a small CLI to display git info based on the current directory.
 
 <a href="https://asciinema.org/a/RlvQkQ57HZ6Pcw7pNlvuLAfjd" target="_blank"><img src="https://asciinema.org/a/RlvQkQ57HZ6Pcw7pNlvuLAfjd.svg" width="600"/></a>
 
-
 ## Features
 
 - When counting the commit difference between the remote and the local clone it
@@ -16,15 +15,18 @@ This is a small CLI to display git info based on the current directory.
 - It will make sure that the last character of the prompt is a space.  Some
   shells break because of this.
 
+Example output:
+
+<a href="https://asciinema.org/a/Vv45iWaTReTofmmqQFxT0XBnu" target="_blank"><img src="https://asciinema.org/a/Vv45iWaTReTofmmqQFxT0XBnu.svg" width="550"/></a>
+
 ## Build
 
 For the time being build with cargo:
 
-```sh
+```bash
 $ mkdir -p ${HOME}/bin # Ensure that this is in your path
 $ cd .../git_prompt
-$ cargo build --release
-$ cp ./target/release/git_prompt ${HOME}/bin
+$ cargo -Z unstable-options build --release --out-dir "${HOME}/bin"
 ```
 
 ## Command-line options
@@ -38,6 +40,7 @@ USAGE:
     git_prompt [FLAGS] [OPTIONS] [PATH]
 
 FLAGS:
+    -x               print example output
     -h, --help       Prints help information
     -V, --version    Prints version information
 
@@ -53,12 +56,12 @@ ARGS:
 
 ### ZSH
 
-More info can be found at <http://zsh.sourceforge.net/Doc/Release/Prompt-Expansion.html>.
+More info can be found at [ZSH documentation prompt expansion section](http://zsh.sourceforge.net/Doc/Release/Prompt-Expansion.html).
 
 ```
 precmd() {
   local git_info=<path to the executable>
-  export PS1="%F{blue}%~%f ${git_info}
+  export PS1="%F{blue}%~%f $(exec ${git_info})
 %F{magenta}❯%f "
 }
 ```
