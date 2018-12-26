@@ -3,7 +3,10 @@ rust:
   - nightly
 matrix:
   fast_finish: true
+before_script:
+    - rustup component add clippy
 cache: cargo
 script:
   - cargo test --verbose
+  - cargo clippy -- --all-targets --all-features -D warnings
   - cargo bench --verbose
