@@ -1,6 +1,5 @@
 use super::model::*;
 use ansi_term::Color;
-use regex::Regex;
 use std::fmt::{self, Display, Formatter};
 
 pub fn print(p: Prompt, c: Colors, bs: BranchSymbols, ss: StatusSymbols) -> String {
@@ -22,22 +21,17 @@ pub fn print(p: Prompt, c: Colors, bs: BranchSymbols, ss: StatusSymbols) -> Stri
         symbols: ss,
         colors: c,
     };
-    let result = format!("{} {} {} {}", repo, state, branch, local);
-    format!("{} ", respace(result.trim()))
-}
-
-fn respace(s: &str) -> String {
-    format!("{}", Regex::new(r"\s+").unwrap().replace_all(s, " "))
+    let mut r = String::new();
+    for i in format!("{} {} {} {}", state, repo, branch, local).split_whitespace() {
+        r.push_str(i);
+        r.push(' ');
+    }
+    r
 }
 
 #[cfg(test)]
 mod print_tests {
     use super::*;
-
-    #[test]
-    fn respace_foo_bar() {
-        assert_eq!(respace("foo   bar"), "foo bar");
-    }
 
     #[test]
     fn prompt_is_respaced() {
