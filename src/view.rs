@@ -2,19 +2,19 @@ use super::model::*;
 use ansi_term::Color;
 use std::fmt::{self, Display, Formatter};
 
-pub fn print(p: Prompt, c: Colors, bs: BranchSymbols, ss: StatusSymbols) -> String {
+pub fn print(p: Prompt, c: &Colors, bs: &BranchSymbols, ss: &StatusSymbols) -> String {
     let state = RepoStateView {
         model: p.repo.state,
-        colors: c.clone(),
+        colors: c,
     };
     let repo = RepoStatusView {
         model: p.repo,
-        colors: c.clone(),
+        colors: c,
     };
     let branch = BranchStatusView {
         model: p.branch,
         symbols: bs,
-        colors: c.clone(),
+        colors: c,
     };
     let local = LocalStatusView {
         model: p.local,
@@ -46,7 +46,7 @@ mod print_tests {
             }),
             local: LOCAL_CLEAN,
         };
-        let c = NO_COLORS.clone();
+        let c = &NO_COLORS;
         let bs = BranchSymbols {
             ahead: "↑",
             behind: "↓",
@@ -58,7 +58,7 @@ mod print_tests {
             unstaged: "u",
             untracked: ".",
         };
-        assert_eq!(print(p, c, bs, ss), "master ↑1↓4 ✓ ");
+        assert_eq!(print(p, &c, &bs, &ss), "master ↑1↓4 ✓ ");
     }
 
     #[test]
@@ -76,7 +76,7 @@ mod print_tests {
                 untracked: 3,
             },
         };
-        let c = NO_COLORS.clone();
+        let c = &NO_COLORS;
         let bs = BranchSymbols {
             ahead: "↑",
             behind: "↓",
@@ -88,7 +88,7 @@ mod print_tests {
             unstaged: "u",
             untracked: ".",
         };
-        assert_eq!(print(p, c, bs, ss), "s1. ");
+        assert_eq!(print(p, &c, &bs, &ss), "s1. ");
     }
 }
 
@@ -121,12 +121,12 @@ pub struct BranchSymbols<'a> {
     pub behind: &'a str,
 }
 
-pub struct RepoStateView {
+pub struct RepoStateView<'a> {
     pub model: git2::RepositoryState,
-    pub colors: Colors,
+    pub colors: &'a Colors,
 }
 
-impl Display for RepoStateView {
+impl<'a> Display for RepoStateView<'a> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let s = match &self.model {
             git2::RepositoryState::Merge => "merge",
@@ -156,7 +156,7 @@ mod repo_state_view {
     fn empty() {
         let v = RepoStateView {
             model: git2::RepositoryState::Clean,
-            colors: NO_COLORS.clone(),
+            colors: &NO_COLORS,
         };
         assert_eq!(format!("{}", v), "");
     }
@@ -165,18 +165,18 @@ mod repo_state_view {
     fn rebase() {
         let v = RepoStateView {
             model: git2::RepositoryState::Rebase,
-            colors: NO_COLORS.clone(),
+            colors: &NO_COLORS,
         };
         assert_eq!(format!("{}", v), "rebase");
     }
 }
 
-pub struct RepoStatusView {
+pub struct RepoStatusView<'a> {
     pub model: RepoStatus,
-    pub colors: Colors,
+    pub colors: &'a Colors,
 }
 
-impl Display for RepoStatusView {
+impl<'a> Display for RepoStatusView<'a> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let b = self.model.branch.as_ref().map(|b| View {
             text: b,
@@ -200,7 +200,7 @@ mod repo_status_view {
                 branch: None,
                 state: git2::RepositoryState::Clean,
             },
-            colors: NO_COLORS.clone(),
+            colors: &NO_COLORS,
         };
         assert_eq!(format!("{}", v), "");
     }
@@ -212,7 +212,7 @@ mod repo_status_view {
                 branch: Some("master".to_owned()),
                 state: git2::RepositoryState::Clean,
             },
-            colors: NO_COLORS.clone(),
+            colors: &NO_COLORS,
         };
         assert_eq!(format!("{}", v), "master");
     }
@@ -220,8 +220,8 @@ mod repo_status_view {
 
 pub struct BranchStatusView<'a> {
     pub model: Option<BranchStatus>,
-    pub symbols: BranchSymbols<'a>,
-    pub colors: Colors,
+    pub symbols: &'a BranchSymbols<'a>,
+    pub colors: &'a Colors,
 }
 
 impl<'a> Display for BranchStatusView<'a> {
@@ -255,11 +255,11 @@ mod branch_status_view {
     fn given(m: Option<BranchStatus>) -> String {
         let v = BranchStatusView {
             model: m,
-            symbols: BranchSymbols {
+            symbols: &BranchSymbols {
                 ahead: "↑",
                 behind: "↓",
             },
-            colors: super::NO_COLORS.clone(),
+            colors: &super::NO_COLORS,
         };
         format!("{}", v)
     }
@@ -294,8 +294,8 @@ const LOCAL_CLEAN: LocalStatus = LocalStatus {
 
 pub struct LocalStatusView<'a> {
     pub model: LocalStatus,
-    pub symbols: StatusSymbols<'a>,
-    pub colors: Colors,
+    pub symbols: &'a StatusSymbols<'a>,
+    pub colors: &'a Colors,
 }
 
 impl<'a> Display for LocalStatusView<'a> {
@@ -342,14 +342,14 @@ mod local_status_view {
     fn given(m: LocalStatus) -> String {
         let v = LocalStatusView {
             model: m,
-            symbols: StatusSymbols {
+            symbols: &StatusSymbols {
                 nothing: "✔",
                 staged: ".",
                 unmerged: "x",
                 unstaged: "+",
                 untracked: "…",
             },
-            colors: NO_COLORS.clone(),
+            colors: &NO_COLORS,
         };
         format!("{}", v)
     }

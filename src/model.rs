@@ -31,7 +31,13 @@ pub struct LocalStatus {
 }
 
 impl LocalStatus {
-    pub fn add(&mut self, status: git2::Status) {
+    pub fn new() -> LocalStatus {
+        LocalStatus {
+            ..Default::default()
+        }
+    }
+
+    pub fn add(&mut self, status: &git2::Status) {
         if status.is_wt_new() {
             self.untracked += 1;
         }
@@ -41,17 +47,17 @@ impl LocalStatus {
             || status.is_index_renamed()
             || status.is_index_typechange()
         {
-            self.staged += 1
+            self.staged += 1;
         }
         if status.is_wt_modified()
             || status.is_wt_deleted()
             || status.is_wt_renamed()
             || status.is_wt_typechange()
         {
-            self.unstaged += 1
+            self.unstaged += 1;
         }
         if status.is_conflicted() {
-            self.unmerged += 1
+            self.unmerged += 1;
         }
     }
 }
@@ -61,10 +67,8 @@ mod local_status {
     use super::*;
 
     fn status(s: git2::Status) -> LocalStatus {
-        let mut actual = LocalStatus {
-            ..Default::default()
-        };
-        actual.add(s);
+        let mut actual = LocalStatus::new();
+        actual.add(&s);
         actual
     }
 
@@ -180,23 +184,31 @@ pub fn repo_status(repo: &Repo) -> R<RepoStatus> {
 
 fn get_repo_rev(r: &Reference) -> Option<String> {
     match r.shorthand() {
-        Some("HEAD") | None => r.target().map(|t| {
-            let mut s = t.to_string();
-            s.truncate(8);
-            s.to_string()
-        }),
+        Some("HEAD") => r.short_id().ok(), // TODO don't discard error
         Some(b) => Some(b.to_owned()),
+        None => None,
     }
 }
 
 pub trait Reference {
     fn shorthand(&self) -> Option<&str>;
+    fn short_id(&self) -> Result<String, String>;
     fn target(&self) -> Option<git2::Oid>;
 }
 
 impl<'repo> Reference for git2::Reference<'repo> {
     fn shorthand(&self) -> Option<&str> {
         self.shorthand()
+    }
+    fn short_id(&self) -> Result<String, String> {
+        self.peel_to_commit()
+            .or_else(|e| Err(format!("{:?}", e)))?
+            .as_object()
+            .short_id()
+            .or_else(|e| Err(format!("{:?}", e)))?
+            .as_str()
+            .ok_or_else(|| "invalid utf-8".to_string())
+            .and_then(|s| Ok(s.to_owned()))
     }
     fn target(&self) -> Option<git2::Oid> {
         self.target()
@@ -210,6 +222,7 @@ mod repo_status {
 
     struct TestReference<'a> {
         shorthand: Option<&'a str>,
+        short_id: Option<&'a str>,
         target: Option<git2::Oid>,
     }
 
@@ -220,12 +233,16 @@ mod repo_status {
         fn target(&self) -> Option<git2::Oid> {
             self.target
         }
+        fn short_id(&self) -> Result<String, String> {
+            Ok(self.short_id.unwrap().to_string())
+        }
     }
 
     #[test]
     fn get_shorthand() {
         let r = TestReference {
             shorthand: Some("foo"),
+            short_id: Some("ha"),
             target: None,
         };
 
@@ -236,15 +253,16 @@ mod repo_status {
     fn get_detached() {
         let r = TestReference {
             shorthand: Some("HEAD"),
+            short_id: Some("ea02629"),
             target: git2::Oid::from_str("ea026298c4856b690bc338e917235059fb1fe22a").ok(),
         };
 
-        assert_eq!(get_repo_rev(&r), Some(String::from("ea026298")));
+        assert_eq!(get_repo_rev(&r), Some(String::from("ea02629")));
     }
 
     #[bench]
     fn bench(b: &mut Bencher) {
-        let r = git2::Repository::discover(".");
+        let r = git2::Repository::discover("/Users/aignas/go-code");
         b.iter(|| {
             r.as_ref()
                 .or_else(|e| Err(format!("{:?}", e)))
@@ -283,7 +301,7 @@ mod bench_branch_status {
 
     #[bench]
     fn bench(b: &mut Bencher) {
-        let r = git2::Repository::discover(".");
+        let r = git2::Repository::discover("/Users/aignas/go-code");
         b.iter(|| {
             r.as_ref()
                 .or_else(|e| Err(format!("{:?}", e)))
@@ -293,20 +311,22 @@ mod bench_branch_status {
 }
 
 pub fn local_status(repo: &Repo) -> R<LocalStatus> {
-    let mut opts = git2::StatusOptions::new();
-    opts.include_untracked(true)
-        .recurse_untracked_dirs(false)
-        .renames_head_to_index(true);
-
-    let statuses = repo
-        .statuses(Some(&mut opts))
-        .or_else(|e| Err(format!("{:?}", e)))?;
-
-    let mut status = LocalStatus {
-        ..Default::default()
-    };
-    for s in statuses.iter().map(|e| e.status()) {
-        status.add(s)
+    let mut status = LocalStatus::new();
+    for s in repo
+        .statuses(Some(
+            git2::StatusOptions::new()
+                .include_ignored(false)
+                .include_unmodified(false)
+                .recurse_ignored_dirs(false)
+                .include_untracked(true)
+                .recurse_untracked_dirs(false)
+                .renames_head_to_index(true),
+        ))
+        .or_else(|e| Err(format!("{:?}", e)))?
+        .iter()
+        .map(|e| e.status())
+    {
+        status.add(&s)
     }
     Ok(status)
 }
@@ -318,7 +338,7 @@ mod bench_local_status {
 
     #[bench]
     fn bench(b: &mut Bencher) {
-        let r = git2::Repository::discover(".");
+        let r = git2::Repository::discover("/Users/aignas/go-code");
         b.iter(|| {
             r.as_ref()
                 .or_else(|e| Err(format!("{:?}", e)))

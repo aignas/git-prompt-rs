@@ -1,14 +1,19 @@
 #![feature(test)]
 
 extern crate clap;
-use ansi_term::Color;
 use clap::{App, Arg};
+mod examples;
 mod model;
+mod parse;
 mod view;
 
 extern crate test;
 
 fn main() {
+    print!("{}", run().unwrap())
+}
+
+fn run() -> model::R<String> {
     let matches = App::new("git_prompt")
         .version("v0.1")
         .author("aignas@github")
@@ -52,171 +57,36 @@ fn main() {
         )
         .get_matches();
 
-    let c = parse_colors(matches.value_of("colorscheme").unwrap()).unwrap();
-    let ss = parse_ss(matches.value_of("status_symbols").unwrap()).unwrap();
-    let bs = parse_bs(matches.value_of("branch_symbols").unwrap()).unwrap();
+    let c = matches
+        .value_of("colorscheme")
+        .ok_or("no value".to_string())
+        .and_then(parse::colors)?;
+    let bs = matches
+        .value_of("branch_symbols")
+        .ok_or("no value".to_string())
+        .and_then(parse::bs)?;
+    let ss = matches
+        .value_of("status_symbols")
+        .ok_or("no value".to_string())
+        .and_then(parse::ss)?;
 
-    if matches.is_present("examples") {
-        let master = Some("master");
-        let clean = git2::RepositoryState::Clean;
-        let rebase = git2::RepositoryState::Rebase;
-
-        fn b(ahead: usize, behind: usize) -> Option<model::BranchStatus> {
-            Some(model::BranchStatus { ahead, behind })
-        }
-        fn s(
-            staged: usize,
-            unstaged: usize,
-            unmerged: usize,
-            untracked: usize,
-        ) -> model::LocalStatus {
-            model::LocalStatus {
-                staged,
-                unstaged,
-                unmerged,
-                untracked,
-            }
-        }
-
-        Examples::new()
-            .add("new", None, clean, None, s(0, 3, 0, 0))
-            .add("ok", master, clean, b(0, 0), s(0, 0, 0, 0))
-            .add("stage", master, clean, b(0, 0), s(3, 0, 0, 0))
-            .add("partial", master, clean, b(0, 0), s(3, 12, 0, 0))
-            .add(
-                "conflicts",
-                Some("a83e2a3f"),
-                rebase,
-                b(0, 3),
-                s(0, 2, 1, 0),
-            )
-            .add("rebase", master, rebase, b(0, 3), s(0, 3, 0, 0))
-            .add("diverged", master, rebase, b(12, 3), s(0, 0, 0, 3))
-            .print(&c, &bs, &ss);
-        return;
-    }
-
-    let path = matches.value_of("PATH").unwrap();
-    let out = match git2::Repository::discover(path)
-        .or_else(|e| Err(format!("{:?}", e)))
-        .and_then(|r| prompt(&r, "master"))
-    {
-        Ok(p) => view::print(p, c, bs, ss),
-        Err(_) => String::from(" "),
+    let v = if matches.is_present("examples") {
+        format!("{}", examples::all().with_style(&c, &bs, &ss))
+    } else {
+        matches
+            .value_of("PATH")
+            .ok_or_else(|| "Unknown path".to_string())
+            .and_then(|p| git2::Repository::discover(p).or_else(|e| Err(format!("{:?}", e))))
+            .and_then(|p| prompt(&p, "master"))
+            .map(|p| view::print(p, &c, &bs, &ss))
+            .unwrap_or_else(|_| String::from(" "))
     };
-    print!("{}", out)
-}
-
-fn parse_colors(input: &str) -> model::R<view::Colors> {
-    if input == "simple" {
-        // Add colorscheme presets here
-        return Ok(view::Colors {
-            ok: Some(Color::Fixed(2)),
-            high: Some(Color::Fixed(1)),
-            normal: Some(Color::Fixed(3)),
-        });
-    }
-
-    let parts: Vec<u8> = input
-        .split(',')
-        .map(|s| s.parse::<u8>().unwrap_or(0))
-        .collect();
-
-    match parts.len() {
-        3 => Ok(view::Colors {
-            ok: Some(Color::Fixed(parts[0])),
-            high: Some(Color::Fixed(parts[1])),
-            normal: Some(Color::Fixed(parts[2])),
-        }),
-        l => Err(format!(
-            "Unknown custom color input: {}. Expected 4 terms, but got {}.",
-            input, l
-        )),
-    }
-}
-
-fn parse_ss(input: &str) -> model::R<view::StatusSymbols> {
-    let parts: Vec<&str> = input.split('|').collect();
-
-    match parts.len() {
-        5 => Ok(view::StatusSymbols {
-            nothing: parts[0],
-            staged: parts[1],
-            unmerged: parts[2],
-            unstaged: parts[3],
-            untracked: parts[4],
-        }),
-        _ => Err(format!("Unknown input format: {}", input)),
-    }
-}
-
-fn parse_bs(input: &str) -> model::R<view::BranchSymbols> {
-    let parts: Vec<&str> = input.split('|').collect();
-
-    match parts.len() {
-        2 => Ok(view::BranchSymbols {
-            ahead: parts[0],
-            behind: parts[1],
-        }),
-        _ => Err(format!("Unknown input format: {}", input)),
-    }
-}
-
-struct Examples {
-    examples: std::collections::HashMap<String, model::Prompt>,
-}
-
-impl Examples {
-    pub fn new() -> Examples {
-        use std::collections::HashMap;
-        Examples {
-            examples: HashMap::new(),
-        }
-    }
-
-    pub fn add(
-        &mut self,
-        key: &str,
-        br: Option<&str>,
-        state: git2::RepositoryState,
-        branch: Option<model::BranchStatus>,
-        local: model::LocalStatus,
-    ) -> &mut Examples {
-        let repo = model::RepoStatus {
-            branch: br.map(|s| s.to_owned()),
-            state,
-        };
-        self.examples.insert(
-            key.to_string(),
-            model::Prompt {
-                repo,
-                branch,
-                local,
-            },
-        );
-        self
-    }
-
-    pub fn print(&self, c: &view::Colors, bs: &view::BranchSymbols, ss: &view::StatusSymbols) {
-        let max_length = self
-            .examples
-            .keys()
-            .map(|l| l.len())
-            .max()
-            .expect("failed to get the maximum example key length");
-        for (l, p) in &self.examples {
-            println!(
-                "{0:>1$}: {2}",
-                l,
-                max_length,
-                view::print(p.clone(), c.clone(), bs.clone(), ss.clone())
-            );
-        }
-    }
+    Ok(v)
 }
 
 pub fn prompt<T: model::Repo>(repo: &T, default: &str) -> model::R<model::Prompt> {
     let r = model::repo_status(repo)?;
+    let l = model::local_status(repo)?;
     let b = r
         .branch
         .as_ref()
@@ -224,7 +94,7 @@ pub fn prompt<T: model::Repo>(repo: &T, default: &str) -> model::R<model::Prompt
     Ok(model::Prompt {
         repo: r,
         branch: b,
-        local: model::local_status(repo)?,
+        local: l,
     })
 }
 
@@ -232,6 +102,7 @@ pub fn prompt<T: model::Repo>(repo: &T, default: &str) -> model::R<model::Prompt
 mod bench_main {
     use super::*;
     use crate::test::Bencher;
+    use ansi_term::Color;
 
     #[bench]
     fn bench_discovery(b: &mut Bencher) {
@@ -285,7 +156,7 @@ mod bench_main {
                     untracked: 0,
                 },
             };
-            view::print(p, c, bs, ss).to_string()
+            view::print(p, &c, &bs, &ss).to_string()
         });
     }
 }
