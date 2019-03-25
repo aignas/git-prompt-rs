@@ -3,10 +3,10 @@ pub type R<T> = Result<T, String>;
 
 #[derive(Clone, Debug)]
 pub struct Prompt {
-    pub repo: RepoStatus,
+    pub repo: Option<RepoStatus>,
     // it only makes sense to have the branch status when the repo is OK
     pub branch: Option<BranchStatus>,
-    pub local: LocalStatus,
+    pub local: Option<LocalStatus>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -262,7 +262,7 @@ mod repo_status {
 
     #[bench]
     fn bench(b: &mut Bencher) {
-        let r = git2::Repository::discover("/Users/aignas/go-code");
+        let r = git2::Repository::discover(".");
         b.iter(|| {
             r.as_ref()
                 .or_else(|e| Err(format!("{:?}", e)))
@@ -301,7 +301,7 @@ mod bench_branch_status {
 
     #[bench]
     fn bench(b: &mut Bencher) {
-        let r = git2::Repository::discover("/Users/aignas/go-code");
+        let r = git2::Repository::discover(".");
         b.iter(|| {
             r.as_ref()
                 .or_else(|e| Err(format!("{:?}", e)))
@@ -338,7 +338,7 @@ mod bench_local_status {
 
     #[bench]
     fn bench(b: &mut Bencher) {
-        let r = git2::Repository::discover("/Users/aignas/go-code");
+        let r = git2::Repository::discover(".");
         b.iter(|| {
             r.as_ref()
                 .or_else(|e| Err(format!("{:?}", e)))

@@ -3,28 +3,47 @@ use ansi_term::Color;
 use std::fmt::{self, Display, Formatter};
 
 pub fn print(p: Prompt, c: &Colors, bs: &BranchSymbols, ss: &StatusSymbols) -> String {
-    let state = RepoStateView {
-        model: p.repo.state,
-        colors: c,
-    };
-    let repo = RepoStatusView {
-        model: p.repo,
-        colors: c,
-    };
-    let branch = BranchStatusView {
-        model: p.branch,
-        symbols: bs,
-        colors: c,
-    };
-    let local = LocalStatusView {
-        model: p.local,
-        symbols: ss,
-        colors: c,
-    };
+    let state = p
+        .repo
+        .as_ref()
+        .map(|repo| RepoStateView {
+            model: repo.state,
+            colors: c,
+        })
+        .map(|v| format!("{}", v))
+        .unwrap_or_default();
+    let repo = p
+        .repo
+        .map(|repo| RepoStatusView {
+            model: repo,
+            colors: c,
+        })
+        .map(|v| format!("{}", v))
+        .unwrap_or_default();
+    let branch = format!(
+        "{}",
+        BranchStatusView {
+            model: p.branch,
+            symbols: bs,
+            colors: c,
+        }
+    );
+    let local = p
+        .local
+        .map(|status| LocalStatusView {
+            model: status,
+            symbols: ss,
+            colors: c,
+        })
+        .map(|v| format!("{}", v))
+        .unwrap_or_default();
+
     let mut r = String::new();
-    for i in format!("{} {} {} {}", state, repo, branch, local).split_whitespace() {
-        r.push_str(i);
-        r.push(' ');
+    for i in vec![state, repo, branch, local].iter() {
+        if i != "" {
+            r.push_str(i);
+            r.push(' ');
+        }
     }
     r
 }
@@ -36,15 +55,15 @@ mod print_tests {
     #[test]
     fn prompt_is_respaced() {
         let p = Prompt {
-            repo: RepoStatus {
+            repo: Some(RepoStatus {
                 branch: Some(String::from("master")),
                 state: git2::RepositoryState::Clean,
-            },
+            }),
             branch: Some(BranchStatus {
                 ahead: 1,
                 behind: 4,
             }),
-            local: LOCAL_CLEAN,
+            local: Some(LOCAL_CLEAN),
         };
         let c = &NO_COLORS;
         let bs = BranchSymbols {
@@ -64,17 +83,17 @@ mod print_tests {
     #[test]
     fn prompt_is_trimmed() {
         let p = Prompt {
-            repo: RepoStatus {
+            repo: Some(RepoStatus {
                 branch: None,
                 state: git2::RepositoryState::Clean,
-            },
+            }),
             branch: None,
-            local: LocalStatus {
+            local: Some(LocalStatus {
                 staged: 1,
                 unmerged: 0,
                 unstaged: 0,
                 untracked: 3,
-            },
+            }),
         };
         let c = &NO_COLORS;
         let bs = BranchSymbols {

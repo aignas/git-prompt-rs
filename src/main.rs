@@ -45,6 +45,21 @@ fn run() -> model::R<String> {
                 .default_value("simple"),
         )
         .arg(
+            Arg::with_name("no-branch")
+                .long("no-branch")
+                .help("don't print the branch")
+            )
+        .arg(
+            Arg::with_name("no-diff")
+                .long("no-diff")
+                .help("don't print the diff")
+            )
+        .arg(
+            Arg::with_name("no-status")
+                .long("no-status")
+                .help("don't print the status")
+            )
+        .arg(
             Arg::with_name("examples")
                 .short("x")
                 .help("print example output"),
@@ -77,25 +92,34 @@ fn run() -> model::R<String> {
             .value_of("PATH")
             .ok_or_else(|| "Unknown path".to_string())
             .and_then(|p| git2::Repository::discover(p).or_else(|e| Err(format!("{:?}", e))))
-            .and_then(|p| prompt(&p, "master"))
+            .and_then(|repo| {
+                let r = model::repo_status(&repo)?;
+                let l = if matches.is_present("no-status") {
+                    None
+                } else {
+                    Some(model::local_status(&repo)?)
+                };
+                let b = if matches.is_present("no-diff") {
+                    None
+                } else {
+                    r.branch
+                        .as_ref()
+                        .and_then(|b| model::branch_status(&repo, b, "master").ok())
+                };
+                Ok(model::Prompt {
+                    repo: if matches.is_present("no-branch") {
+                        None
+                    } else {
+                        Some(r)
+                    },
+                    branch: b,
+                    local: l,
+                })
+            })
             .map(|p| view::print(p, &c, &bs, &ss))
             .unwrap_or_else(|_| String::from(" "))
     };
     Ok(v)
-}
-
-pub fn prompt<T: model::Repo>(repo: &T, default: &str) -> model::R<model::Prompt> {
-    let r = model::repo_status(repo)?;
-    let l = model::local_status(repo)?;
-    let b = r
-        .branch
-        .as_ref()
-        .and_then(|b| model::branch_status(repo, b, default).ok());
-    Ok(model::Prompt {
-        repo: r,
-        branch: b,
-        local: l,
-    })
 }
 
 #[cfg(test)]
@@ -107,16 +131,6 @@ mod bench_main {
     #[bench]
     fn bench_discovery(b: &mut Bencher) {
         b.iter(|| git2::Repository::discover("."));
-    }
-
-    #[bench]
-    fn bench_reading(b: &mut Bencher) {
-        let r = git2::Repository::discover(".");
-        b.iter(|| {
-            r.as_ref()
-                .or_else(|e| Err(format!("{:?}", e)))
-                .and_then(|r| prompt(r, "master"))
-        });
     }
 
     #[bench]

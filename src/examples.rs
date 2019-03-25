@@ -68,9 +68,9 @@ impl<'a> Examples<'a> {
         self.examples.insert(
             key.to_string(),
             model::Prompt {
-                repo,
+                repo: Some(repo),
                 branch,
-                local,
+                local: Some(local),
             },
         );
         self
