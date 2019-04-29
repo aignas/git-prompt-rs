@@ -10,10 +10,10 @@ mod view;
 extern crate test;
 
 fn main() {
-    print!("{}", run().unwrap())
+    run().unwrap_or(());
 }
 
-fn run() -> model::R<String> {
+fn run() -> model::R<()> {
     let matches = App::new("git_prompt")
         .version("v0.1")
         .author("aignas@github")
@@ -45,19 +45,9 @@ fn run() -> model::R<String> {
                 .default_value("simple"),
         )
         .arg(
-            Arg::with_name("no-branch")
-                .long("no-branch")
-                .help("don't print the branch")
-            )
-        .arg(
-            Arg::with_name("no-diff")
-                .long("no-diff")
-                .help("don't print the diff")
-            )
-        .arg(
-            Arg::with_name("no-status")
-                .long("no-status")
-                .help("don't print the status")
+            Arg::with_name("stream")
+                .long("stream")
+                .help("Print the stuff as a stream with updates, which is helpful when using in ZSH with zle -F.")
             )
         .arg(
             Arg::with_name("examples")
@@ -85,10 +75,58 @@ fn run() -> model::R<String> {
         .ok_or("no value".to_string())
         .and_then(parse::ss)?;
 
-    let v = if matches.is_present("examples") {
-        format!("{}", examples::all().with_style(&c, &bs, &ss))
+    if matches.is_present("examples") {
+        print!("{}", examples::all().with_style(&c, &bs, &ss));
+    } else if matches.is_present("stream") {
+        let repo = matches
+            .value_of("PATH")
+            .ok_or_else(|| "Unknown path".to_string())
+            .and_then(|p| git2::Repository::discover(p).or_else(|e| Err(format!("{:?}", e))));
+
+        if let Err(_e) = repo {
+            println!("");
+            return Ok(());
+        }
+        let repo = repo.unwrap();
+
+        let r = model::repo_status(&repo)?;
+        let p = model::Prompt {
+            repo: Some(r.clone()),
+            branch: None,
+            local: None,
+        };
+        let v = view::print(p, &c, &bs, &ss).to_string();
+        if v != " " {
+            println!("{}", v);
+        }
+
+        let b = r
+            .branch
+            .as_ref()
+            .and_then(|b| model::branch_status(&repo, b, "master").ok());
+        let p = model::Prompt {
+            repo: Some(r.clone()),
+            branch: b.clone(),
+            local: None,
+        };
+        let n = view::print(p, &c, &bs, &ss).to_string();
+        if v != n {
+            println!("{}", n);
+        }
+        let v = n;
+
+        let l = Some(model::local_status(&repo)?);
+        let p = model::Prompt {
+            repo: Some(r),
+            branch: b,
+            local: l,
+        };
+        let n = view::print(p, &c, &bs, &ss).to_string();
+        if v != n {
+            println!("{}", n);
+        }
     } else {
-        matches
+        let v = matches
             .value_of("PATH")
             .ok_or_else(|| "Unknown path".to_string())
             .and_then(|p| git2::Repository::discover(p).or_else(|e| Err(format!("{:?}", e))))
@@ -117,9 +155,10 @@ fn run() -> model::R<String> {
                 })
             })
             .map(|p| view::print(p, &c, &bs, &ss))
-            .unwrap_or_else(|_| String::from(" "))
+            .unwrap_or_else(|_| String::from(" "));
+        println!("{}", v);
     };
-    Ok(v)
+    Ok(())
 }
 
 #[cfg(test)]
@@ -155,20 +194,20 @@ mod bench_main {
                 behind: "↓",
             };
             let p = model::Prompt {
-                repo: model::RepoStatus {
+                repo: Some(model::RepoStatus {
                     branch: Some(String::from("master")),
                     state: git2::RepositoryState::Clean,
-                },
+                }),
                 branch: Some(model::BranchStatus {
                     ahead: 1,
                     behind: 4,
                 }),
-                local: model::LocalStatus {
+                local: Some(model::LocalStatus {
                     staged: 0,
                     unmerged: 0,
                     unstaged: 0,
                     untracked: 0,
-                },
+                }),
             };
             view::print(p, &c, &bs, &ss).to_string()
         });
