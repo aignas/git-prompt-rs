@@ -36,7 +36,7 @@ pub fn all<'a>() -> Examples<'a> {
 }
 
 pub struct Examples<'a> {
-    examples: std::collections::HashMap<String, model::Prompt>,
+    examples: std::collections::HashMap<String, view::Prompt<'a>>,
     c: Option<&'a view::Colors>,
     bs: Option<&'a view::BranchSymbols<'a>>,
     ss: Option<&'a view::StatusSymbols<'a>>,
@@ -67,11 +67,9 @@ impl<'a> Examples<'a> {
         };
         self.examples.insert(
             key.to_string(),
-            model::Prompt {
-                repo: Some(repo),
-                branch,
-                local: Some(local),
-            },
+            view::Prompt::new(&repo)
+                .with_branch(branch)
+                .with_local(Some(local)),
         );
         self
     }

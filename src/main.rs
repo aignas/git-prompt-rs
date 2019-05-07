@@ -10,7 +10,9 @@ mod view;
 extern crate test;
 
 fn main() {
-    run().unwrap_or(());
+    if let Err(_) = run() {
+        println!(); // print an empty line in case of an error
+    };
 }
 
 fn run() -> model::R<()> {
@@ -19,6 +21,12 @@ fn run() -> model::R<()> {
         .author("aignas@github")
         .about("Prints your git prompt info fast!")
         .arg(
+            Arg::with_name("PATH")
+                .help("Optional path to use for getting git info")
+                .index(1)
+                .default_value("."),
+        )
+        .arg(
             Arg::with_name("default_branch")
                 .short("d")
                 .long("default-branch")
@@ -26,6 +34,11 @@ fn run() -> model::R<()> {
                 .env("GIT_PROMPT_DEFAULT_BRANCH")
                 .default_value("master"),
         )
+        .arg(
+            Arg::with_name("print_updates")
+                .long("print-updates")
+                .help("Print the updates to the prompt as they happen.  This will at most print 3 lines of text which is useful for asynchronous updating when using in ZSH with zle -F or similar.")
+            )
         .arg(
             Arg::with_name("status_symbols")
                 .long("status-symbols")
@@ -45,20 +58,9 @@ fn run() -> model::R<()> {
                 .default_value("simple"),
         )
         .arg(
-            Arg::with_name("stream")
-                .long("stream")
-                .help("Print the stuff as a stream with updates, which is helpful when using in ZSH with zle -F.")
-            )
-        .arg(
             Arg::with_name("examples")
                 .short("x")
                 .help("print example output"),
-        )
-        .arg(
-            Arg::with_name("PATH")
-                .help("Optional path to use for getting git info")
-                .index(1)
-                .default_value("."),
         )
         .get_matches();
 
@@ -74,90 +76,54 @@ fn run() -> model::R<()> {
         .value_of("status_symbols")
         .ok_or("no value".to_string())
         .and_then(parse::ss)?;
+    let default_branch = &matches
+        .value_of("default_branch")
+        .ok_or("no value".to_string())?;
 
     if matches.is_present("examples") {
         print!("{}", examples::all().with_style(&c, &bs, &ss));
-    } else if matches.is_present("stream") {
-        let repo = matches
-            .value_of("PATH")
-            .ok_or_else(|| "Unknown path".to_string())
-            .and_then(|p| git2::Repository::discover(p).or_else(|e| Err(format!("{:?}", e))));
+        return Ok(());
+    }
 
-        if let Err(_e) = repo {
-            println!("");
-            return Ok(());
+    let repo = matches
+        .value_of("PATH")
+        .ok_or_else(|| "Unknown path".to_string())
+        .and_then(|p| git2::Repository::discover(p).or_else(|e| Err(format!("{:?}", e))))?;
+    let r = model::repo_status(&repo)?;
+    let prompt = view::Prompt::new(&r).with_style(&c, &bs, &ss);
+
+    if matches.is_present("print_updates") {
+        let current = format!("{}", prompt);
+        println!("{}", current);
+        let prompt = prompt.with_branch(
+            r.branch
+                .as_ref()
+                .and_then(|b| model::branch_status(&repo, b, default_branch).ok()),
+        );
+        let next = format!("{}", prompt);
+        if next != current {
+            let current = next;
+            println!("{}", current);
         }
-        let repo = repo.unwrap();
-
-        let r = model::repo_status(&repo)?;
-        let p = model::Prompt {
-            repo: Some(r.clone()),
-            branch: None,
-            local: None,
-        };
-        let v = view::print(p, &c, &bs, &ss).to_string();
-        if v != " " {
-            println!("{}", v);
-        }
-
-        let b = r
-            .branch
-            .as_ref()
-            .and_then(|b| model::branch_status(&repo, b, "master").ok());
-        let p = model::Prompt {
-            repo: Some(r.clone()),
-            branch: b.clone(),
-            local: None,
-        };
-        let n = view::print(p, &c, &bs, &ss).to_string();
-        if v != n {
-            println!("{}", n);
-        }
-        let v = n;
-
-        let l = Some(model::local_status(&repo)?);
-        let p = model::Prompt {
-            repo: Some(r),
-            branch: b,
-            local: l,
-        };
-        let n = view::print(p, &c, &bs, &ss).to_string();
-        if v != n {
-            println!("{}", n);
+        let next = prompt
+            .with_local(Some(model::local_status(&repo)?))
+            .to_string();
+        if next != current {
+            let current = next;
+            println!("{}", current);
         }
     } else {
-        let v = matches
-            .value_of("PATH")
-            .ok_or_else(|| "Unknown path".to_string())
-            .and_then(|p| git2::Repository::discover(p).or_else(|e| Err(format!("{:?}", e))))
-            .and_then(|repo| {
-                let r = model::repo_status(&repo)?;
-                let l = if matches.is_present("no-status") {
-                    None
-                } else {
-                    Some(model::local_status(&repo)?)
-                };
-                let b = if matches.is_present("no-diff") {
-                    None
-                } else {
+        println!(
+            "{}",
+            prompt
+                .with_branch(
                     r.branch
                         .as_ref()
-                        .and_then(|b| model::branch_status(&repo, b, "master").ok())
-                };
-                Ok(model::Prompt {
-                    repo: if matches.is_present("no-branch") {
-                        None
-                    } else {
-                        Some(r)
-                    },
-                    branch: b,
-                    local: l,
-                })
-            })
-            .map(|p| view::print(p, &c, &bs, &ss))
-            .unwrap_or_else(|_| String::from(" "));
-        println!("{}", v);
-    };
+                        .and_then(|b| model::branch_status(&repo, b, default_branch).ok()),
+                )
+                .with_local(Some(model::local_status(&repo)?))
+        );
+    }
     Ok(())
 }
 
@@ -193,23 +159,22 @@ mod bench_main {
                 ahead: "↑",
                 behind: "↓",
             };
-            let p = model::Prompt {
-                repo: Some(model::RepoStatus {
-                    branch: Some(String::from("master")),
-                    state: git2::RepositoryState::Clean,
-                }),
-                branch: Some(model::BranchStatus {
-                    ahead: 1,
-                    behind: 4,
-                }),
-                local: Some(model::LocalStatus {
-                    staged: 0,
-                    unmerged: 0,
-                    unstaged: 0,
-                    untracked: 0,
-                }),
-            };
-            view::print(p, &c, &bs, &ss).to_string()
+            view::Prompt::new(&model::RepoStatus {
+                branch: Some(String::from("master")),
+                state: git2::RepositoryState::Clean,
+            })
+            .with_branch(Some(model::BranchStatus {
+                ahead: 1,
+                behind: 4,
+            }))
+            .with_local(Some(model::LocalStatus {
+                staged: 0,
+                unmerged: 0,
+                unstaged: 0,
+                untracked: 0,
+            }))
+            .with_style(&c, &bs, &ss)
+            .to_string()
         });
     }
 }

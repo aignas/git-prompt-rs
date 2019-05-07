@@ -1,14 +1,6 @@
 type RepoState = git2::RepositoryState;
 pub type R<T> = Result<T, String>;
 
-#[derive(Clone, Debug)]
-pub struct Prompt {
-    pub repo: Option<RepoStatus>,
-    // it only makes sense to have the branch status when the repo is OK
-    pub branch: Option<BranchStatus>,
-    pub local: Option<LocalStatus>,
-}
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct RepoStatus {
     // the branch might not be known, when the repo does not have any commits

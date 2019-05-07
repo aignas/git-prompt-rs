@@ -2,50 +2,113 @@ use super::model::*;
 use ansi_term::Color;
 use std::fmt::{self, Display, Formatter};
 
-pub fn print(p: Prompt, c: &Colors, bs: &BranchSymbols, ss: &StatusSymbols) -> String {
-    let state = p
-        .repo
-        .as_ref()
-        .map(|repo| RepoStateView {
-            model: repo.state,
-            colors: c,
-        })
-        .map(|v| format!("{}", v))
-        .unwrap_or_default();
-    let repo = p
-        .repo
-        .map(|repo| RepoStatusView {
-            model: repo,
-            colors: c,
-        })
-        .map(|v| format!("{}", v))
-        .unwrap_or_default();
-    let branch = format!(
-        "{}",
-        BranchStatusView {
-            model: p.branch,
-            symbols: bs,
-            colors: c,
-        }
-    );
-    let local = p
-        .local
-        .map(|status| LocalStatusView {
-            model: status,
-            symbols: ss,
-            colors: c,
-        })
-        .map(|v| format!("{}", v))
-        .unwrap_or_default();
+#[derive(Clone, Debug)]
+pub struct Prompt<'a> {
+    pub repo: RepoStatus,
+    // it only makes sense to have the branch status when the repo is OK
+    pub branch: Option<BranchStatus>,
+    pub local: Option<LocalStatus>,
 
-    let mut r = String::new();
-    for i in vec![state, repo, branch, local].iter() {
-        if i != "" {
-            r.push_str(i);
-            r.push(' ');
+    pub colors: Colors,
+    pub branch_symbols: BranchSymbols<'a>,
+    pub status_symbols: StatusSymbols<'a>,
+}
+
+impl<'a> Prompt<'a> {
+    pub fn new(repo: &RepoStatus) -> Prompt<'a> {
+        Prompt {
+            repo: repo.clone(),
+            branch: None,
+            local: None,
+            colors: NO_COLORS,
+            branch_symbols: BranchSymbols {
+                ahead: "↑",
+                behind: "↓",
+            },
+            status_symbols: StatusSymbols {
+                nothing: "✔",
+                staged: "●",
+                unmerged: "✖",
+                unstaged: "✚",
+                untracked: "…",
+            },
         }
     }
-    r
+
+    pub fn with_branch(&self, branch: Option<BranchStatus>) -> Prompt<'a> {
+        let mut p = self.clone();
+        p.branch = branch.clone();
+        p
+    }
+
+    pub fn with_local(&self, local: Option<LocalStatus>) -> Prompt<'a> {
+        let mut p = self.clone();
+        p.local = local.clone();
+        p
+    }
+
+    pub fn with_style(
+        &self,
+        c: &Colors,
+        bs: &'a BranchSymbols,
+        ss: &'a StatusSymbols,
+    ) -> Prompt<'a> {
+        let mut p = self.clone();
+        p.colors = c.clone();
+        p.branch_symbols = bs.clone();
+        p.status_symbols = ss.clone();
+        p
+    }
+}
+
+impl<'a> Display for Prompt<'a> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        let state = format!(
+            "{}",
+            RepoStateView {
+                model: self.repo.state,
+                colors: &self.colors,
+            }
+        );
+        let repo = format!(
+            "{}",
+            RepoStatusView {
+                model: self.repo.clone(),
+                colors: &self.colors,
+            }
+        );
+        let branch = format!(
+            "{}",
+            BranchStatusView {
+                model: self.branch.clone(),
+                symbols: &self.branch_symbols,
+                colors: &self.colors,
+            }
+        );
+        let local = self
+            .local
+            .clone()
+            .map(|status| LocalStatusView {
+                model: status,
+                symbols: &self.status_symbols,
+                colors: &self.colors,
+            })
+            .map(|v| format!("{}", v))
+            .unwrap_or_default();
+
+        let mut r = String::new();
+        for i in vec![state, repo, branch, local].iter() {
+            if i != "" {
+                r.push_str(i);
+                r.push(' ');
+            }
+        }
+        write!(f, "{}", r)
+    }
+}
+
+pub fn print(p: Prompt, c: &Colors, bs: &BranchSymbols, ss: &StatusSymbols) -> String {
+    p.with_style(c, bs, ss).to_string()
 }
 
 #[cfg(test)]
@@ -54,47 +117,44 @@ mod print_tests {
 
     #[test]
     fn prompt_is_respaced() {
-        let p = Prompt {
-            repo: Some(RepoStatus {
-                branch: Some(String::from("master")),
-                state: git2::RepositoryState::Clean,
-            }),
-            branch: Some(BranchStatus {
-                ahead: 1,
-                behind: 4,
-            }),
-            local: Some(LOCAL_CLEAN),
-        };
-        let c = &NO_COLORS;
-        let bs = BranchSymbols {
-            ahead: "↑",
-            behind: "↓",
-        };
-        let ss = StatusSymbols {
-            nothing: "✓",
-            staged: "s",
-            unmerged: "m",
-            unstaged: "u",
-            untracked: ".",
-        };
-        assert_eq!(print(p, &c, &bs, &ss), "master ↑1↓4 ✓ ");
+        let p = Prompt::new(&RepoStatus {
+            branch: Some(String::from("master")),
+            state: git2::RepositoryState::Clean,
+        })
+        .with_branch(Some(BranchStatus {
+            ahead: 1,
+            behind: 4,
+        }))
+        .with_local(Some(LOCAL_CLEAN))
+        .with_style(
+            &NO_COLORS,
+            &BranchSymbols {
+                ahead: "↑",
+                behind: "↓",
+            },
+            &StatusSymbols {
+                nothing: "✓",
+                staged: "s",
+                unmerged: "m",
+                unstaged: "u",
+                untracked: ".",
+            },
+        );
+        assert_eq!(p.to_string(), "master ↑1↓4 ✓ ");
     }
 
     #[test]
     fn prompt_is_trimmed() {
-        let p = Prompt {
-            repo: Some(RepoStatus {
-                branch: None,
-                state: git2::RepositoryState::Clean,
-            }),
+        let p = Prompt::new(&RepoStatus {
             branch: None,
-            local: Some(LocalStatus {
-                staged: 1,
-                unmerged: 0,
-                unstaged: 0,
-                untracked: 3,
-            }),
-        };
+            state: git2::RepositoryState::Clean,
+        })
+        .with_local(Some(LocalStatus {
+            staged: 1,
+            unmerged: 0,
+            unstaged: 0,
+            untracked: 3,
+        }));
         let c = &NO_COLORS;
         let bs = BranchSymbols {
             ahead: "↑",
@@ -111,21 +171,20 @@ mod print_tests {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Colors {
     pub ok: Option<Color>,
     pub high: Option<Color>,
     pub normal: Option<Color>,
 }
 
-#[cfg(test)]
 pub const NO_COLORS: Colors = Colors {
     ok: None,
     high: None,
     normal: None,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct StatusSymbols<'a> {
     pub nothing: &'a str,
     pub staged: &'a str,
@@ -134,7 +193,7 @@ pub struct StatusSymbols<'a> {
     pub untracked: &'a str,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BranchSymbols<'a> {
     pub ahead: &'a str,
     pub behind: &'a str,
