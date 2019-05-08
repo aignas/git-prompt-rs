@@ -29,7 +29,7 @@ impl LocalStatus {
         }
     }
 
-    pub fn add(&mut self, status: &git2::Status) {
+    pub fn add(&mut self, status: git2::Status) {
         if status.is_wt_new() {
             self.untracked += 1;
         }
@@ -60,7 +60,7 @@ mod local_status {
 
     fn status(s: git2::Status) -> LocalStatus {
         let mut actual = LocalStatus::new();
-        actual.add(&s);
+        actual.add(s);
         actual
     }
 
@@ -314,7 +314,7 @@ pub fn local_status(repo: &Repo) -> LocalStatus {
             .renames_head_to_index(true),
     )) {
         for s in statuses.iter().map(|e| e.status()) {
-            status.add(&s)
+            status.add(s)
         }
     }
     status
