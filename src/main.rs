@@ -106,7 +106,7 @@ fn run() -> model::R<()> {
             println!("{}", current);
         }
         let next = prompt
-            .with_local(Some(model::local_status(&repo)?))
+            .with_local(Some(model::local_status(&repo)))
             .to_string();
         if next != current {
             let current = next;
@@ -121,7 +121,7 @@ fn run() -> model::R<()> {
                         .as_ref()
                         .and_then(|b| model::branch_status(&repo, b, default_branch).ok()),
                 )
-                .with_local(Some(model::local_status(&repo)?))
+                .with_local(Some(model::local_status(&repo)))
         );
     }
     Ok(())

@@ -302,25 +302,22 @@ mod bench_branch_status {
     }
 }
 
-pub fn local_status(repo: &Repo) -> R<LocalStatus> {
+pub fn local_status(repo: &Repo) -> LocalStatus {
     let mut status = LocalStatus::new();
-    for s in repo
-        .statuses(Some(
-            git2::StatusOptions::new()
-                .include_ignored(false)
-                .include_unmodified(false)
-                .recurse_ignored_dirs(false)
-                .include_untracked(true)
-                .recurse_untracked_dirs(false)
-                .renames_head_to_index(true),
-        ))
-        .or_else(|e| Err(format!("{:?}", e)))?
-        .iter()
-        .map(|e| e.status())
-    {
-        status.add(&s)
+    if let Ok(statuses) = repo.statuses(Some(
+        git2::StatusOptions::new()
+            .include_ignored(false)
+            .include_unmodified(false)
+            .recurse_ignored_dirs(false)
+            .include_untracked(true)
+            .recurse_untracked_dirs(false)
+            .renames_head_to_index(true),
+    )) {
+        for s in statuses.iter().map(|e| e.status()) {
+            status.add(&s)
+        }
     }
-    Ok(status)
+    status
 }
 
 #[cfg(test)]
@@ -334,7 +331,7 @@ mod bench_local_status {
         b.iter(|| {
             r.as_ref()
                 .or_else(|e| Err(format!("{:?}", e)))
-                .and_then(|r| local_status(r))
+                .map(|r| local_status(r))
         });
     }
 }
