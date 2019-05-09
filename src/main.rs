@@ -64,10 +64,21 @@ fn run() -> model::R<()> {
         )
         .get_matches();
 
-    let c = parse::colors(matches.value_of("colorscheme").unwrap())?;
-    let bs = parse::bs(matches.value_of("branch_symbols").unwrap())?;
-    let ss = parse::ss(matches.value_of("status_symbols").unwrap())?;
-    let default_branch = matches.value_of("default_branch").unwrap();
+    let c = matches
+        .value_of("colorscheme")
+        .ok_or_else(|| "BUG: colorscheme has no default".to_owned())
+        .and_then(parse::colors)?;
+    let bs = matches
+        .value_of("branch_symbols")
+        .ok_or_else(|| "BUG: branch_symbols has no default".to_owned())
+        .and_then(parse::bs)?;
+    let ss = matches
+        .value_of("status_symbols")
+        .ok_or_else(|| "BUG: status_symbols has no default".to_owned())
+        .and_then(parse::ss)?;
+    let default_branch = matches
+        .value_of("default_branch")
+        .ok_or_else(|| "BUG: default_branch has no default".to_owned())?;
 
     if matches.is_present("examples") {
         print!("{}", examples::all().with_style(&c, &bs, &ss));
