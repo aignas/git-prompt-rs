@@ -32,7 +32,6 @@ pub fn colors(input: &str) -> model::R<view::Colors> {
 
 pub fn ss(input: &str) -> model::R<view::StatusSymbols> {
     let parts: Vec<&str> = input.split('|').collect();
-
     match parts.len() {
         5 => Ok(view::StatusSymbols {
             nothing: parts[0],
@@ -41,18 +40,23 @@ pub fn ss(input: &str) -> model::R<view::StatusSymbols> {
             unstaged: parts[3],
             untracked: parts[4],
         }),
-        _ => Err(format!("Unknown input format: {}", input)),
+        l => Err(format!(
+            "Unknown input format: {}. Expected 5 terms, but got {}.",
+            input, l
+        )),
     }
 }
 
 pub fn bs(input: &str) -> model::R<view::BranchSymbols> {
     let parts: Vec<&str> = input.split('|').collect();
-
     match parts.len() {
         2 => Ok(view::BranchSymbols {
             ahead: parts[0],
             behind: parts[1],
         }),
-        _ => Err(format!("Unknown input format: {}", input)),
+        l => Err(format!(
+            "Unknown input format: {}. Expected 2 terms, but got {}.",
+            input, l
+        )),
     }
 }
