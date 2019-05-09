@@ -107,10 +107,6 @@ impl<'a> Display for Prompt<'a> {
     }
 }
 
-pub fn print(p: Prompt, c: &Colors, bs: &BranchSymbols, ss: &StatusSymbols) -> String {
-    p.with_style(c, bs, ss).to_string()
-}
-
 #[cfg(test)]
 mod print_tests {
     use super::*;
@@ -167,7 +163,7 @@ mod print_tests {
             unstaged: "u",
             untracked: ".",
         };
-        assert_eq!(print(p, &c, &bs, &ss), "s1. ");
+        assert_eq!(p.with_style(&c, &bs, &ss).to_string(), "s1. ");
     }
 }
 
