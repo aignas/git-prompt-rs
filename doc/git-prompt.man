@@ -1,0 +1,56 @@
+.TH GIT_PROMPT "1" "June 2019" "git-prompt 0.2.0" "User Commands"
+.SH NAME
+git-prompt \- a cross-platform and very fast git prompt supporting colors and async-capable shells.
+.SH "SYNOPSIS"
+git-prompt [FLAGS] [OPTIONS]
+.SH DESCRIPTION
+The git-prompt is a CLI program that focuses to integrate well with shells
+without the need for extra plugins.  If you want the smoothest possible
+experience, you can use it with the zsh shell, but it should work equally well
+with bash as well.
+.SH "FLAGS"
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Prints help information
+.TP
+\fB\-\-print\-updates\fR
+Prints the info in several goes and as fast as possible.  Useful for building integrations with async shells
+.TP
+\fB\-x\fR
+Prints example output
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Prints version information
+.SH "OPTIONS"
+.TP
+\fB\-\-branch-symbols\fR <branch_symbols>
+Branch symbols to be used for the output.  The format is 'ahead|behind' [default: ↑|↓]
+.TP
+\fB\-\-colorscheme\fR <colorscheme>...
+colorscheme to be used.  Either a preset or comma-separated byte values.  [default: simple]
+.TP
+\fB\-d\fR, \fB\-\-default-branch\fR <default_branch>
+default branch to use when printing diff status
+[env: GIT_PROMPT_DEFAULT_BRANCH=]
+[default: master]
+.TP
+\fB\-\-status-symbols\fR <status-symbols>
+status symbols to be used for the output.  The format is
+\'ok|staged|unmerged|unstaged|untracked\'
+[default: ✔|●|✖|✚|…]
+.SH "SEE ALSO"
+See the git-prompt github repository at https://github.com/aignas/alacritty for the full documentation.
+.SH "BUGS"
+Found a bug? Please report it at https://github.com/aignas/git-prompt-rs/issues.
+.SH "AUTHORS"
+Maintainers:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+Ignas Anikevicius <anikevicius@gmail.com>
