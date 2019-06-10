@@ -19,6 +19,30 @@ Example output:
 
 <a href="https://asciinema.org/a/Vv45iWaTReTofmmqQFxT0XBnu" target="_blank"><img src="https://asciinema.org/a/Vv45iWaTReTofmmqQFxT0XBnu.svg" width="550"/></a>
 
+## Install
+
+### ArchLinux
+
+```sh
+$ aura -A git-prompt-rs-git
+```
+
+### Mac
+
+TODO @aignas (2019-06-11): This is planned, but not yet done
+
+```sh
+$ brew install git-prompt-rs
+```
+
+### Using `cargo`
+
+TODO @aignas (2019-06-11): This is planned, but not yet done
+
+```sh
+$ cargo install git-prompt-rs
+```
+
 ## Build
 
 For the time being build with cargo:
