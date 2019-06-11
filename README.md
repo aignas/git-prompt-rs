@@ -1,6 +1,6 @@
 # Git prompt
 
-[![Build Status](https://travis-ci.org/aignas/git_prompt.svg?branch=master)](https://travis-ci.org/aignas/git_prompt)
+[![Build Status](https://travis-ci.org/aignas/git_prompt.svg?branch=master)](https://travis-ci.org/aignas/git-prompt-rs)
 [![dependency status](https://deps.rs/repo/github/aignas/git-prompt-rs/status.svg)](https://deps.rs/repo/github/aignas/git-prompt-rs)
 
 This is a small CLI to display git info based on the current directory.
