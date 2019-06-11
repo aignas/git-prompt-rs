@@ -1,12 +1,11 @@
 language: rust
 rust:
+  - stable
+  - beta
   - nightly
-matrix:
-  fast_finish: true
 before_script:
   - rustup component add clippy
-cache: cargo
 script:
-  - cargo test --verbose
-  - cargo clippy -- --all-targets --all-features -D warnings
-  - cargo bench --verbose
+  - make lint
+  - make check
+  - make DESTDIR=testdir PREFIX=/usr install
