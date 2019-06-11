@@ -48,16 +48,14 @@ target/release/git-prompt: build.rs src/*.rs Cargo.toml
 	SHELL_COMPLETIONS_DIR=$(SHELL_COMPLETIONS_DIR) \
 		cargo build --release $(CARGO_OPTS)
 
-check: target/release/git-prompt lint
-	cargo test --release $(CARGO_OPTS)
+check: target/release/git-prompt lint test bench
 
-.PHONY: lint
-lint:
-	cargo clippy --all-targets --all-features -- -D warnings
-
-.PHONY: clean
-clean:
-	cargo clean
+# Aliases to cargo
+.PHONY: test bench lint clean
+test: ; cargo test --release $(CARGO_OPTS)
+bench: ; cargo bench $(CARGO_OPTS)
+lint: ; cargo clippy --all-targets --all-features -- -D warnings
+clean: ; cargo clean
 
 .PHONY: help
 help:

@@ -1,12 +1,12 @@
 language: rust
 rust:
-  - stable
-  - beta
+  # TODO @aignas (2019-06-11): We depend on bench, so we can't use these until
+  # stabilized.  See https://github.com/rust-lang/rust/issues/29553
+  # - stable
+  # - beta
   - nightly
 before_script:
   - rustup component add clippy
 script:
-  # Run build, lint, test
   - make check
-  # Run the installation script just to check that it is working
   - make DESTDIR=testdir PREFIX=/usr install
