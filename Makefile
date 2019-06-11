@@ -51,6 +51,10 @@ target/release/git-prompt: build.rs src/*.rs Cargo.toml
 check: target/release/git-prompt
 	cargo test --release $(CARGO_OPTS)
 
+.PHONY: lint
+lint:
+	cargo clippy --all-targets --all-features -- -D warnings
+
 .PHONY: clean
 clean:
 	cargo clean
