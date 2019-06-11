@@ -25,7 +25,9 @@ Example output:
 ### ArchLinux
 
 ```sh
-$ aura -A git-prompt-rs-git
+$ git clone https://aur.archlinux.org/git-prompt-rs.git ${HOME}/aur/git-prompt-rs-git
+$ cd ${HOME}/aur/git-prompt-rs-git
+$ makepkg -si
 ```
 
 ### Mac
