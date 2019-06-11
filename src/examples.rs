@@ -1,6 +1,7 @@
 use super::model;
 use super::view;
 use std::fmt::{self, Display, Formatter};
+use std::string::String;
 
 pub fn all<'a>() -> Examples<'a> {
     let master = Some("master".to_owned());
@@ -84,7 +85,7 @@ impl<'a> Display for Examples<'a> {
         let max_length = self
             .examples
             .keys()
-            .map(|k| k.len())
+            .map(String::len)
             .max()
             .expect("failed to get the maximum example key length");
         self.examples.iter().for_each(|(l, p)| {
