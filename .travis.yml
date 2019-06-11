@@ -6,6 +6,7 @@ rust:
 before_script:
   - rustup component add clippy
 script:
-  - make lint
+  # Run build, lint, test
   - make check
+  # Run the installation script just to check that it is working
   - make DESTDIR=testdir PREFIX=/usr install

@@ -48,7 +48,7 @@ target/release/git-prompt: build.rs src/*.rs Cargo.toml
 	SHELL_COMPLETIONS_DIR=$(SHELL_COMPLETIONS_DIR) \
 		cargo build --release $(CARGO_OPTS)
 
-check: target/release/git-prompt
+check: target/release/git-prompt lint
 	cargo test --release $(CARGO_OPTS)
 
 .PHONY: lint
