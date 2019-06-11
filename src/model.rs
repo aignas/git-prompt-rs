@@ -164,7 +164,7 @@ impl Repo for git2::Repository {
     }
 }
 
-pub fn repo_status(repo: &Repo) -> R<RepoStatus> {
+pub fn repo_status(repo: &dyn Repo) -> R<RepoStatus> {
     Ok(RepoStatus {
         branch: repo
             .head()
@@ -174,7 +174,7 @@ pub fn repo_status(repo: &Repo) -> R<RepoStatus> {
     })
 }
 
-fn get_repo_rev(r: &Reference) -> Option<String> {
+fn get_repo_rev(r: &dyn Reference) -> Option<String> {
     match r.shorthand() {
         Some("HEAD") => r.short_id().ok(), // TODO don't discard error
         Some(b) => Some(b.to_owned()),
@@ -263,7 +263,7 @@ mod repo_status {
     }
 }
 
-pub fn branch_status(repo: &Repo, name: &str, default: &str) -> R<BranchStatus> {
+pub fn branch_status(repo: &dyn Repo, name: &str, default: &str) -> R<BranchStatus> {
     let (ahead, behind) = repo
         .graph_ahead_behind(
             repo.head()
@@ -276,7 +276,7 @@ pub fn branch_status(repo: &Repo, name: &str, default: &str) -> R<BranchStatus> 
     Ok(BranchStatus { ahead, behind })
 }
 
-fn get_remote_ref(repo: &Repo, name: &str) -> R<git2::Oid> {
+fn get_remote_ref(repo: &dyn Repo, name: &str) -> R<git2::Oid> {
     repo.find_branch(name, git2::BranchType::Local)
         .or_else(|e| Err(format!("{:?}", e)))?
         .upstream()
@@ -302,7 +302,7 @@ mod bench_branch_status {
     }
 }
 
-pub fn local_status(repo: &Repo) -> LocalStatus {
+pub fn local_status(repo: &dyn Repo) -> LocalStatus {
     let mut status = LocalStatus::new();
     if let Ok(statuses) = repo.statuses(Some(
         git2::StatusOptions::new()
