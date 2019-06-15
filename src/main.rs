@@ -1,13 +1,9 @@
-#![feature(test)]
-
 extern crate clap;
 mod app;
 mod examples;
 mod model;
 mod parse;
 mod view;
-
-extern crate test;
 
 fn main() {
     if run().is_err() {
@@ -78,56 +74,4 @@ fn run() -> model::R<()> {
         );
     }
     Ok(())
-}
-
-#[cfg(test)]
-mod bench_main {
-    use super::*;
-    use crate::test::Bencher;
-    use ansi_term::Color;
-
-    #[bench]
-    fn bench_discovery(b: &mut Bencher) {
-        b.iter(|| git2::Repository::discover("."));
-    }
-
-    #[bench]
-    fn bench_view(b: &mut Bencher) {
-        b.iter(|| {
-            let c = view::Colors {
-                ok: Some(Color::Green),
-                high: Some(Color::Red),
-                normal: Some(Color::Yellow),
-            };
-
-            let ss = view::StatusSymbols {
-                nothing: "✔",
-                staged: "●",
-                unmerged: "✖",
-                unstaged: "✚",
-                untracked: "…",
-            };
-
-            let bs = view::BranchSymbols {
-                ahead: "↑",
-                behind: "↓",
-            };
-            view::Prompt::new(&model::RepoStatus {
-                branch: Some(String::from("master")),
-                state: git2::RepositoryState::Clean,
-            })
-            .with_branch(Some(model::BranchStatus {
-                ahead: 1,
-                behind: 4,
-            }))
-            .with_local(Some(model::LocalStatus {
-                staged: 0,
-                unmerged: 0,
-                unstaged: 0,
-                untracked: 0,
-            }))
-            .with_style(&c, &bs, &ss)
-            .to_string()
-        });
-    }
 }

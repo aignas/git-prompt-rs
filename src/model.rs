@@ -210,7 +210,6 @@ impl<'repo> Reference for git2::Reference<'repo> {
 #[cfg(test)]
 mod repo_status {
     use super::*;
-    use crate::test::Bencher;
 
     struct TestReference<'a> {
         shorthand: Option<&'a str>,
@@ -251,16 +250,6 @@ mod repo_status {
 
         assert_eq!(get_repo_rev(&r), Some(String::from("ea02629")));
     }
-
-    #[bench]
-    fn bench(b: &mut Bencher) {
-        let r = git2::Repository::discover(".");
-        b.iter(|| {
-            r.as_ref()
-                .or_else(|e| Err(format!("{:?}", e)))
-                .and_then(|r| repo_status(r))
-        });
-    }
 }
 
 pub fn branch_status(repo: &dyn Repo, name: &str, default: &str) -> R<BranchStatus> {
@@ -286,22 +275,6 @@ fn get_remote_ref(repo: &dyn Repo, name: &str) -> R<git2::Oid> {
         .ok_or_else(|| "failed to get remote branch name".to_owned())
 }
 
-#[cfg(test)]
-mod bench_branch_status {
-    use super::*;
-    use crate::test::Bencher;
-
-    #[bench]
-    fn bench(b: &mut Bencher) {
-        let r = git2::Repository::discover(".");
-        b.iter(|| {
-            r.as_ref()
-                .or_else(|e| Err(format!("{:?}", e)))
-                .and_then(|r| branch_status(r, "master", "master"))
-        });
-    }
-}
-
 pub fn local_status(repo: &dyn Repo) -> LocalStatus {
     let mut status = LocalStatus::new();
     if let Ok(statuses) = repo.statuses(Some(
@@ -318,20 +291,4 @@ pub fn local_status(repo: &dyn Repo) -> LocalStatus {
         }
     }
     status
-}
-
-#[cfg(test)]
-mod bench_local_status {
-    use super::*;
-    use crate::test::Bencher;
-
-    #[bench]
-    fn bench(b: &mut Bencher) {
-        let r = git2::Repository::discover(".");
-        b.iter(|| {
-            r.as_ref()
-                .or_else(|e| Err(format!("{:?}", e)))
-                .map(|r| local_status(r))
-        });
-    }
 }
