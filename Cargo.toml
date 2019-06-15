@@ -26,6 +26,9 @@ ansi_term = "0.11"
 features = ["suggestions", "color", "wrap_help"]
 version = "2.33.0"
 
+# TODO @aignas (2019-06-11): We depend on criterion.rs for bench,
+# stabilization of the bench macro:
+# https://github.com/rust-lang/rust/issues/29553
 [dev-dependencies]
 criterion = "0.2"
 

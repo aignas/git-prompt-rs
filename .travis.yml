@@ -1,9 +1,7 @@
 language: rust
 rust:
-  # TODO @aignas (2019-06-11): We depend on bench, so we can't use these until
-  # stabilized.  See https://github.com/rust-lang/rust/issues/29553
-  # - stable
-  # - beta
+  - stable
+  - beta
   - nightly
 before_script:
   - rustup component add clippy
