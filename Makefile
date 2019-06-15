@@ -52,9 +52,9 @@ check: target/release/git-prompt lint test bench
 
 # Aliases to cargo
 .PHONY: test bench lint clean
-test: ; cargo test --release $(CARGO_OPTS)
+test:  ; cargo test --release $(CARGO_OPTS)
 bench: ; cargo bench $(CARGO_OPTS)
-lint: ; cargo clippy --all-targets --all-features -- -D warnings
+lint:  ; cargo clippy --all-targets --all-features -- -D warnings
 clean: ; cargo clean
 
 .PHONY: help

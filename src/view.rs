@@ -108,6 +108,7 @@ impl<'a> Display for Prompt<'a> {
 }
 
 #[cfg(test)]
+#[allow(unused_imports)]
 mod print_tests {
     use super::*;
 
@@ -223,6 +224,7 @@ impl<'a> Display for RepoStateView<'a> {
 }
 
 #[cfg(test)]
+#[allow(unused_imports)]
 mod repo_state_view {
     use super::*;
 
@@ -264,6 +266,7 @@ impl<'a> Display for RepoStatusView<'a> {
 }
 
 #[cfg(test)]
+#[allow(unused_imports)]
 mod repo_status_view {
     use super::*;
 
@@ -323,6 +326,7 @@ impl<'a> Display for BranchStatusView<'a> {
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 mod branch_status_view {
     use super::*;
 
@@ -410,6 +414,7 @@ impl<'a> Display for LocalStatusView<'a> {
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 mod local_status_view {
     use super::*;
 
@@ -480,6 +485,7 @@ impl<'a> Display for View<'a> {
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 mod simple_view_tests {
     use super::View;
     use ansi_term::Color;
@@ -532,6 +538,7 @@ impl<'a> Display for StatView<'a> {
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 mod stat_view_tests {
     use super::StatView;
     use ansi_term::Color;

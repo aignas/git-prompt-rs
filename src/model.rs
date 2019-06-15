@@ -55,6 +55,7 @@ impl LocalStatus {
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 mod local_status {
     use super::*;
 
@@ -208,6 +209,7 @@ impl<'repo> Reference for git2::Reference<'repo> {
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 mod repo_status {
     use super::*;
 
