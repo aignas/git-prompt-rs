@@ -1,5 +1,5 @@
-DESTDIR =
-PREFIX  = /usr/local
+DESTDIR ?= testdir
+PREFIX  ?= /usr/local
 
 override define compdir
 ifndef $(1)
@@ -24,7 +24,7 @@ build: target/release/git-prompt
 	install -Dm755 -T $^ $@
 
 "$(DESTDIR)$(PREFIX)/share/man/man1/git-prompt.1": \
-	doc/git-prompt.man
+	doc/git-prompt.1
 	install -Dm644 -T $^ $@
 "$(DESTDIR)$(BASHDIR)/git-prompt.bash": \
 	$(SHELL_COMPLETIONS_DIR)/git-prompt.bash
@@ -48,10 +48,11 @@ target/release/git-prompt: build.rs src/*.rs Cargo.toml
 	SHELL_COMPLETIONS_DIR=$(SHELL_COMPLETIONS_DIR) \
 		cargo build --release $(CARGO_OPTS)
 
-check: target/release/git-prompt lint test bench
+check: target/release/git-prompt lint test bench install
+	rm -rf $(DESTDIR)
 
 # Aliases to cargo
-.PHONY: test bench lint clean
+.PHONY: test bench lint clean install
 test:  ; cargo test --release $(CARGO_OPTS)
 bench: ; cargo bench $(CARGO_OPTS)
 lint:  ; cargo clippy --all-targets --all-features -- -D warnings

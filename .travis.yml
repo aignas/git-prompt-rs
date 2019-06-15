@@ -7,4 +7,3 @@ before_script:
   - rustup component add clippy
 script:
   - make check
-  - make DESTDIR=testdir PREFIX=/usr install
