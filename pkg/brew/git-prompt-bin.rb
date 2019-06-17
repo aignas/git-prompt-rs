@@ -11,7 +11,8 @@ class GitPromptBin < Formula
       sha256 "c76080aa807a339b44139885d77d15ad60ab8cdd2c2fdaf345d0985625bc0f97"
   end
 
-  conflicts_with "git-prompt"
+  #TODO @aignas (2019-06-17): this should be enabled once I have the pkg in main repos
+  #conflicts_with "git-prompt"
 
   def install
     bin.install "git-prompt"
