@@ -55,42 +55,6 @@ $ cd .../git_prompt
 $ cargo -Z unstable-options build --release --out-dir "${HOME}/bin"
 ```
 
-## Command-line options
-
-```
-git-prompt v0.2
-aignas@github
-Prints your git prompt info fast!
-
-USAGE:
-    git-prompt [FLAGS] [OPTIONS] [PATH]
-
-FLAGS:
-    -x                     print example output
-    -h, --help             Prints help information
-        --print-updates    Print the updates to the prompt as they happen.  This will at
-                           most print 3 lines of text which is useful for asynchronous
-                           updating when using in ZSH with zle -F or similar.
-    -V, --version          Prints version information
-
-OPTIONS:
-        --branch-symbols <branch_symbols>
-            branch symbols to be used for the output.  The format is 'ahead|behind'
-            [default: ↑|↓]
-        --colorscheme <colorscheme>
-            colorscheme to be used.  Either a preset or comma-separated byte values.
-            [default: simple]
-    -d, --default-branch <default_branch>
-            default branch to use when printing diff status [env:
-            GIT_PROMPT_DEFAULT_BRANCH=]  [default: master]
-        --status-symbols <status_symbols>
-            status symbols to be used for the output.  The format is
-            'ok|staged|unmerged|unstaged|untracked' [default: ✔|●|✖|✚|…]
-
-ARGS:
-    <PATH>    Optional path to use for getting git info [default: .]
-```
-
 ## Setup
 
 ### ZSH
