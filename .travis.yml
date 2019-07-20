@@ -1,5 +1,9 @@
 language: rust
 cache: cargo
+env:
+  global:
+    - PROJECT_NAME: git-prompt-rs
+    - RUST_BACKTRACE: full
 matrix:
   allow_failures:
   - rust: nightly
@@ -39,7 +43,7 @@ matrix:
 before_script: rustup component add clippy
 script: make check
 
-before_deploy: make DESTDIR=deployment/$(PROJECT_NAME)-$(TRAVIS_TAG)-$(TARGET) release
+before_deploy: make DESTDIR=deployment/${PROJECT_NAME}-${TRAVIS_TAG}-${TARGET} release
 deploy:
   provider: releases
   file_glob: true

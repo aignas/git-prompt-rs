@@ -2,7 +2,7 @@ use clap::{App, Arg};
 
 pub fn build() -> App<'static, 'static> {
     App::new("git-prompt")
-        .version("0.2.2")
+        .version("0.2.0")
         .author("aignas@github")
         .about("Prints your git prompt info fast!")
         .arg(
