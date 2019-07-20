@@ -1,14 +1,21 @@
 language: rust
-rust:
-- stable
-- beta
-- nightly
 cache: cargo
 matrix:
   allow_failures:
   - rust: nightly
   fast_finish: true
   include:
+  # Ensuring that we can still build on stable
+  - os: osx
+    rust: stable
+    env: TARGET=x86_64-apple-darwin
+  - os: linux
+    rust: stable
+    env: TARGET=x86_64-unknown-linux-gnu
+  - os: linux
+    rust: stable
+    env: TARGET=x86_64-unknown-linux-musl
+  # Beta for testing what's next
   - os: osx
     rust: beta
     env: TARGET=x86_64-apple-darwin
@@ -17,7 +24,17 @@ matrix:
     env: TARGET=x86_64-unknown-linux-gnu
   - os: linux
     rust: beta
-    env: TARGET=i686-unknown-linux-musl
+    env: TARGET=x86_64-unknown-linux-musl
+  # Nightly for testing what's next
+  - os: osx
+    rust: nightly
+    env: TARGET=x86_64-apple-darwin
+  - os: linux
+    rust: nightly
+    env: TARGET=x86_64-unknown-linux-gnu
+  - os: linux
+    rust: nightly
+    env: TARGET=x86_64-unknown-linux-musl
 before_script:
 - rustup component add clippy
 script:
@@ -30,7 +47,7 @@ deploy:
   skip_cleanup: true
   on:
     repo: aignas/git-prompt-rs
-    condition: $TRAVIS_RUST_VERSION = nightly
+    condition: $TRAVIS_RUST_VERSION = beta
     branch: master
     tags: true
 
