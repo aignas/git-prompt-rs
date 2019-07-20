@@ -2,6 +2,7 @@ class GitPromptBin < Formula
   version '0.2.0'
   desc "Print the current git status in your prompt"
   homepage "https://github.com/aignas/git-prompt-rs"
+  depends_on ":openssl" => "1.1"
 
   if OS.mac?
       url "https://github.com/aignas/git-prompt-rs/releases/download/#{version}/git-prompt-rs-#{version}-x86_64-apple-darwin.tar.gz"
