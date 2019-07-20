@@ -5,10 +5,10 @@ class GitPromptBin < Formula
 
   if OS.mac?
       url "https://github.com/aignas/git-prompt-rs/releases/download/#{version}/git-prompt-rs-#{version}-x86_64-apple-darwin.tar.gz"
-      sha256 "32754b4173ac87a7bfffd436d601a49362676eb1841ab33440f2f49c002c8967"
+      sha256 "e6e4bfc4f606a73e58cf4eb17c41bc9c6946ee7a423e3da44f62a1c770d2b662"
   elsif OS.linux?
       url "https://github.com/aignas/git-prompt-rs/releases/download/#{version}/git-prompt-rs-#{version}-x86_64-unknown-linux-musl.tar.gz"
-      sha256 "c76080aa807a339b44139885d77d15ad60ab8cdd2c2fdaf345d0985625bc0f97"
+      sha256 "ea479b54e79983260a54c224b7a15f52c39513f9996f049fecc1dbbae39e9e34"
   end
 
   #TODO @aignas (2019-06-17): this should be enabled once I have the pkg in main repos
