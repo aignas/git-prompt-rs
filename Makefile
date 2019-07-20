@@ -45,16 +45,13 @@ install: \
 	$(DESTDIR)$(ZSHDIR)/_git-prompt \
 	$(DESTDIR)$(FISHDIR)/git-prompt.fish
 
-tar: install
-	tar -C $(DESTDIR) -czvf $(DESTDIR).tar.gz .
-
-release: ; $(MAKE) \
+release: install ; $(MAKE) \
 	BINDIR=/ \
 	DOCDIR=/doc \
 	BASHDIR=/complete \
 	ZSHDIR=/complete \
 	FISHDIR=/complete \
-	tar
+	tar -C $(DESTDIR) -czvf $(DESTDIR).tar.gz .
 
 target/release/git-prompt: build.rs src/*.rs Cargo.toml
 	$(info building with cargo)
@@ -77,13 +74,16 @@ help:
 	@echo '  all         - build git-prompt (default)'
 	@echo '  build       - build git-prompt'
 	@echo '  clean       - run `cargo clean`'
-	@echo '  install     - build and install git-prompt and manpage'
+	@echo '  install     - build and install git-prompt and manpage and completions'
+	@echo '  release     - build and archive for a release'
 	@echo '  check       - run `cargo test`'
 	@echo '  help        - print this help'
 	@echo
 	@echo 'Variables:'
-	@echo '  DESTDIR  - A path that'\''s prepended to installation paths (default: "")'
+	@echo '  DESTDIR  - A path that'\''s prepended to installation paths (default: "testdir")'
+	@echo '  BINDIR   - The installation location for the binary installation (default: $$PREFIX/bin)'
+	@echo '  DOCDIR   - The installation location for manpages (default: $$PREFIX/usr/man/man1)'
 	@echo '  PREFIX   - The installation prefix for everything except zsh completions (default: /usr/local)'
-	@echo '  BASHDIR  - The directory to install bash completions in (default: $$PREFIX/etc/bash_completion.d)'
+	@echo '  BASHDIR  - The directory to install bash completions in (default: /etc/bash_completion.d)'
 	@echo '  ZSHDIR   - The directory to install zsh completions in (default: /usr/share/zsh/vendor-completions)'
 	@echo '  FISHDIR  - The directory to install fish completions in (default: $$PREFIX/share/fish/vendor_completions.d)'
