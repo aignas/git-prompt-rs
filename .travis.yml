@@ -1,14 +1,50 @@
 language: rust
 rust:
-  - stable
-  - beta
-  - nightly
+- stable
+- beta
+- nightly
 cache: cargo
 matrix:
   allow_failures:
-    - rust: nightly
+  - rust: nightly
   fast_finish: true
+  include:
+  - os: osx
+    rust: beta
+    env: TARGET=x86_64-apple-darwin
+  - os: linux
+    rust: beta
+    env: TARGET=x86_64-unknown-linux-gnu
+  - os: linux
+    rust: beta
+    env: TARGET=i686-unknown-linux-musl
 before_script:
-  - rustup component add clippy
+- rustup component add clippy
 script:
-  - make check
+- make check
+before_deploy: make DESTDIR=deployment/$(PROJECT_NAME)-$(TRAVIS_TAG)-$(TARGET) release
+deploy:
+  provider: releases
+  file_glob: true
+  file: deployment/${PROJECT_NAME}-${TRAVIS_TAG}-${TARGET}.tar.gz
+  skip_cleanup: true
+  on:
+    repo: aignas/git-prompt-rs
+    condition: $TRAVIS_RUST_VERSION = nightly
+    branch: master
+    tags: true
+
+  api_key:
+    secure: oLmhXUjN06BT7SfTyrENhkTyRvbudJm/uEiLfG35xsOoaYHHLTJt5tbjcxFqksbcA/QO2qWDoxiDPyvK2zwnZ/gCXvNbUCNlo0pa9ANjuL8+rgpAQ5Dhr3Hhtz8+OL3shcK6myASds1NKeYnedGQ4vuxyAIRWnZD7BXdZ9LzLJ2rw+2Tro4g2uumBoA++5pGobve2yPjakDTQtRzDBm96bErIoraeYdK6dqpfNnOSwANlPdl2NfgvT7otDGqypXoLVgELtGWkNBykmU6S1/BBUI30Qa4KUmxKxEw0g910uLrU0UYaRJMW6TTD8NF08GIprfb8XE61mNFWV8A0FH81t9KamJZrSI8ubTL+0oB8oSQZEYFnV4X/T0WfxmQcVjmIgWRndCr1dMO/T0ztuEOachD1Y9kRuOXtXVIiJFEwUT6Z9fRJe2/sCIp3YhnRPJ/bmCMVhWMf3ozbhRTWWMWrGwj7aOdDcgr9bz/idGCAjtGuw+aONUiz+ojuLQRsPRwV7nFhFGwvS+gpwpvhpOyhiJHao5vY8Q69lafdrCMlIWlE9inMtSTF1Mw7PYtf8kU/raxElF2L6ivY6wEJO6crkHilBENM03ns4YadK+jAn6ABAsiQeLNNxs886tmglNMVvDJA6kb+NplbZGA1CpUfVbrNXNfUIKgv+fWASVHT0A=
+
+branches:
+  only:
+    # Pushes and PR to the master branch
+    - master
+    # Ruby regex to match tags. Required, or travis won't trigger deploys when
+    # a new tag is pushed.
+    - /^\d+\.\d+\.\d+.*$/
+
+notifications:
+  email:
+    on_success: never

@@ -34,7 +34,7 @@ $ makepkg -si
 
 ```sh
 $ brew tap aignas/git-prompt-rs https://github.com/aignas/git-prompt-rs.git
-$ brew install git-prompt
+$ brew install git-prompt-bin
 ```
 
 ### Using `cargo`
