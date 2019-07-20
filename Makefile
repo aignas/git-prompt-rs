@@ -7,9 +7,11 @@ $(1) := $$(or $$(shell pkg-config --variable=completionsdir $(2) 2>/dev/null),$(
 endif
 endef
 
-$(eval $(call compdir,BASHDIR,bash-completion,$(PREFIX)/etc/bash_completion.d))
+$(eval $(call compdir,BASHDIR,bash-completion,/etc/bash_completion.d))
 $(eval $(call compdir,ZSHDIR,zsh,/usr/share/zsh/vendor_completions.d))
 $(eval $(call compdir,FISHDIR,fish,$(PREFIX)/share/fish/vendor_completions.d))
+$(eval $(call compdir,DOCDIR,doc,$(PREFIX)/share/man/man1))
+$(eval $(call compdir,BINDIR,bin,$(PREFIX)/bin))
 
 CARGO_OPTS :=
 SHELL_COMPLETIONS_DIR ?= target/release/completions
@@ -19,29 +21,40 @@ all: target/release/git-prompt
 .PHONY: build
 build: target/release/git-prompt
 
-"$(DESTDIR)$(PREFIX)/bin/git-prompt": \
-	target/release/git-prompt
-	install -Dm755 -T $^ $@
+$(DESTDIR)$(BINDIR)/git-prompt: target/release/git-prompt
+	mkdir -p $(@D)
+	install -m755 $^ $@
 
-"$(DESTDIR)$(PREFIX)/share/man/man1/git-prompt.1": \
-	doc/git-prompt.1
-	install -Dm644 -T $^ $@
-"$(DESTDIR)$(BASHDIR)/git-prompt.bash": \
-	$(SHELL_COMPLETIONS_DIR)/git-prompt.bash
-	install -Dm644 -T $^ $@
-"$(DESTDIR)$(FISHDIR)/git-prompt.fish": \
-	$(SHELL_COMPLETIONS_DIR)/git-prompt.fish
-	install -Dm644 -T $^ $@
-"$(DESTDIR)$(ZSHDIR)/_git-prompt": \
-	$(SHELL_COMPLETIONS_DIR)/_git-prompt
-	install -Dm644 -T $^ $@
+$(DESTDIR)$(DOCDIR)/git-prompt.1: doc/git-prompt.1
+	mkdir -p $(@D)
+	install -m644 $^ $@
+$(DESTDIR)$(BASHDIR)/git-prompt.bash: $(SHELL_COMPLETIONS_DIR)/git-prompt.bash
+	mkdir -p $(@D)
+	install -m644 $^ $@
+$(DESTDIR)$(FISHDIR)/git-prompt.fish: $(SHELL_COMPLETIONS_DIR)/git-prompt.fish
+	mkdir -p $(@D)
+	install -m644 $^ $@
+$(DESTDIR)$(ZSHDIR)/_git-prompt: $(SHELL_COMPLETIONS_DIR)/_git-prompt
+	mkdir -p $(@D)
+	install -m644 $^ $@
 
 install: \
-	"$(DESTDIR)$(PREFIX)/bin/git-prompt" \
-	"$(DESTDIR)$(PREFIX)/share/man/man1/git-prompt.1" \
-	"$(DESTDIR)$(BASHDIR)/git-prompt.bash" \
-	"$(DESTDIR)$(ZSHDIR)/_git-prompt" \
-	"$(DESTDIR)$(FISHDIR)/git-prompt.fish"
+	$(DESTDIR)$(BINDIR)/git-prompt \
+	$(DESTDIR)$(DOCDIR)/git-prompt.1 \
+	$(DESTDIR)$(BASHDIR)/git-prompt.bash \
+	$(DESTDIR)$(ZSHDIR)/_git-prompt \
+	$(DESTDIR)$(FISHDIR)/git-prompt.fish
+
+tar: install
+	tar -C $(DESTDIR) -czvf $(DESTDIR).tar.gz .
+
+release: ; $(MAKE) \
+	BINDIR=/ \
+	DOCDIR=/doc \
+	BASHDIR=/complete \
+	ZSHDIR=/complete \
+	FISHDIR=/complete \
+	tar
 
 target/release/git-prompt: build.rs src/*.rs Cargo.toml
 	$(info building with cargo)
