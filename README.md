@@ -37,14 +37,6 @@ $ brew tap aignas/git-prompt-rs https://github.com/aignas/git-prompt-rs.git
 $ brew install git-prompt-bin
 ```
 
-### Using `cargo`
-
-TODO @aignas (2019-06-11): This is planned, but not yet done
-
-```sh
-$ cargo install git-prompt-rs
-```
-
 ## Build
 
 For the time being build with cargo:
