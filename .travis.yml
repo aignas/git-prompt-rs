@@ -35,10 +35,10 @@ matrix:
   - os: linux
     rust: nightly
     env: TARGET=x86_64-unknown-linux-musl
-before_script:
-- rustup component add clippy
-script:
-- make check
+
+before_script: rustup component add clippy
+script: make check
+
 before_deploy: make DESTDIR=deployment/$(PROJECT_NAME)-$(TRAVIS_TAG)-$(TARGET) release
 deploy:
   provider: releases

@@ -7,7 +7,7 @@ description = "A git prompt built for fast feedback"
 license = "MIT"
 name = "git-prompt"
 readme = "./README.md"
-version = "0.2.1"
+version = "0.2.2"
 repository = "https://github.com/aignas/git-prompt-rs"
 edition = "2018"
 
