@@ -115,7 +115,7 @@ mod print_tests {
     #[test]
     fn prompt_is_respaced() {
         let p = Prompt::new(&RepoStatus {
-            branch: Some(String::from("master")),
+            branch: Some("master".into()),
             state: git2::RepositoryState::Clean,
         })
         .with_branch(Some(BranchStatus {

@@ -178,7 +178,7 @@ pub fn repo_status(repo: &dyn Repo) -> R<RepoStatus> {
 fn get_repo_rev(r: &dyn Reference) -> Option<String> {
     match r.shorthand() {
         Some("HEAD") => r.short_id().ok(), // TODO don't discard error
-        Some(b) => Some(b.to_owned()),
+        Some(b) => Some(b.into()),
         None => None,
     }
 }
@@ -201,7 +201,7 @@ impl<'repo> Reference for git2::Reference<'repo> {
             .or_else(|e| Err(format!("{:?}", e)))?
             .as_str()
             .ok_or_else(|| "invalid utf-8".to_string())
-            .and_then(|s| Ok(s.to_owned()))
+            .and_then(|s| Ok(s.into()))
     }
     fn target(&self) -> Option<git2::Oid> {
         self.target()
@@ -239,7 +239,7 @@ mod repo_status {
             target: None,
         };
 
-        assert_eq!(get_repo_rev(&r), Some(String::from("foo")));
+        assert_eq!(get_repo_rev(&r), Some("foo".into()));
     }
 
     #[test]
@@ -250,7 +250,7 @@ mod repo_status {
             target: git2::Oid::from_str("ea026298c4856b690bc338e917235059fb1fe22a").ok(),
         };
 
-        assert_eq!(get_repo_rev(&r), Some(String::from("ea02629")));
+        assert_eq!(get_repo_rev(&r), Some("ea02629".into()));
     }
 }
 
