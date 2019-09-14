@@ -50,10 +50,10 @@ release: install ; $(MAKE) \
 	DOCDIR=/doc \
 	BASHDIR=/complete \
 	ZSHDIR=/complete \
-	FISHDIR=/complete \
+	FISHDIR=/complete
 	tar -C $(DESTDIR) -czvf $(DESTDIR).tar.gz .
 
-target/release/git-prompt: build.rs src/*.rs Cargo.toml
+$(SHELL_COMPLETIONS_DIR) target/release/git-prompt: build.rs src/*.rs Cargo.toml
 	$(info building with cargo)
 	SHELL_COMPLETIONS_DIR=$(SHELL_COMPLETIONS_DIR) \
 		cargo build --release $(CARGO_OPTS)
