@@ -7,7 +7,7 @@ description = "A git prompt built for fast feedback"
 license = "MIT"
 name = "git-prompt"
 readme = "./README.md"
-version = "0.2.0"
+version = "0.2.1"
 repository = "https://github.com/aignas/git-prompt-rs"
 edition = "2018"
 
@@ -20,7 +20,7 @@ clap = "2.33.0"
 version_check = "0.9.1"
 
 [dependencies]
-git2 = "0.9.1"
+git2 = "0.10.0"
 ansi_term = "0.12"
 [dependencies.clap]
 features = ["suggestions", "color", "wrap_help"]
@@ -30,7 +30,7 @@ version = "2.33.0"
 # stabilization of the bench macro:
 # https://github.com/rust-lang/rust/issues/29553
 [dev-dependencies]
-criterion = "0.2"
+criterion = "0.3"
 
 [[bench]]
 name = "bench"
