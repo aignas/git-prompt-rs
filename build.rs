@@ -9,7 +9,11 @@
 extern crate clap;
 extern crate version_check;
 
-use clap::Shell;
+use clap::IntoApp;
+use clap_generate::{
+    generate_to,
+    generators::{Bash, Fish, Zsh},
+};
 use std::fs;
 use std::io::{self, Write};
 use std::process::exit;
@@ -29,11 +33,14 @@ fn main() {
     let outdir = std::env::var_os("SHELL_COMPLETIONS_DIR")
         .or(std::env::var_os("OUT_DIR"))
         .unwrap();
-    fs::create_dir_all(&outdir).unwrap();
+    if let Err(why) = fs::create_dir_all(&outdir) {
+        panic!("couldn't create completion file dir: {}", why);
+    }
 
     println!("building shell completions");
-    let mut app = build();
-    app.gen_completions("git-prompt", Shell::Bash, &outdir);
-    app.gen_completions("git-prompt", Shell::Fish, &outdir);
-    app.gen_completions("git-prompt", Shell::Zsh, &outdir);
+    let mut app = Opts::into_app();
+    let bin_name = "git-prompt";
+    generate_to::<Bash, _, _>(&mut app, bin_name, &outdir);
+    generate_to::<Fish, _, _>(&mut app, bin_name, &outdir);
+    generate_to::<Zsh, _, _>(&mut app, bin_name, &outdir);
 }

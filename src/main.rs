@@ -1,4 +1,5 @@
 extern crate clap;
+use clap::Clap;
 mod app;
 mod examples;
 mod model;
@@ -12,42 +13,29 @@ fn main() {
 }
 
 fn run() -> model::R<()> {
-    let matches = app::build().get_matches_from(std::env::args());
-    let c = matches
-        .value_of("colorscheme")
-        .ok_or_else(|| "BUG: colorscheme has no default".to_owned())
-        .and_then(parse::colors)?;
-    let bs = matches
-        .value_of("branch_symbols")
-        .ok_or_else(|| "BUG: branch_symbols has no default".to_owned())
-        .and_then(parse::bs)?;
-    let ss = matches
-        .value_of("status_symbols")
-        .ok_or_else(|| "BUG: status_symbols has no default".to_owned())
-        .and_then(parse::ss)?;
-    let default_branch = matches
-        .value_of("default_branch")
-        .ok_or_else(|| "BUG: default_branch has no default".to_owned())?;
+    let opts = app::Opts::parse();
 
-    if matches.is_present("examples") {
-        print!("{}", examples::all().with_style(&c, &bs, &ss));
+    // convert from the apps params into model;
+    let cs = parse::colors(&opts.colorscheme)?;
+    let bs = parse::bs(&opts.branch_symbols)?;
+    let ss = parse::ss(&opts.status_symbols)?;
+
+    if opts.examples {
+        print!("{}", examples::all().with_style(&cs, &bs, &ss));
         return Ok(());
     }
 
-    let repo = matches
-        .value_of("PATH")
-        .ok_or_else(|| "Unknown path".to_string())
-        .and_then(|p| git2::Repository::discover(p).or_else(|e| Err(format!("{:?}", e))))?;
+    let repo = git2::Repository::discover(&opts.path).or_else(|e| Err(format!("{:?}", e)))?;
     let r = model::repo_status(&repo)?;
-    let prompt = view::Prompt::new(&r).with_style(&c, &bs, &ss);
+    let prompt = view::Prompt::new(&r).with_style(&cs, &bs, &ss);
 
-    if matches.is_present("print_updates") {
+    if opts.print_updates {
         let current = format!("{}", prompt);
         println!("{}", current);
         let prompt = prompt.with_branch(
             r.branch
                 .as_ref()
-                .and_then(|b| model::branch_status(&repo, b, default_branch).ok()),
+                .and_then(|b| model::branch_status(&repo, b, &opts.default_branch).ok()),
         );
         let next = format!("{}", prompt);
         if next != current {
@@ -66,9 +54,12 @@ fn run() -> model::R<()> {
             "{}",
             prompt
                 .with_branch(
-                    r.branch
-                        .as_ref()
-                        .and_then(|b| model::branch_status(&repo, b, default_branch).ok()),
+                    r.branch.as_ref().and_then(|b| model::branch_status(
+                        &repo,
+                        b,
+                        &opts.default_branch
+                    )
+                    .ok()),
                 )
                 .with_local(Some(model::local_status(&repo)))
         );

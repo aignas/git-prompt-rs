@@ -7,7 +7,7 @@ description = "A git prompt built for fast feedback"
 license = "MIT"
 name = "git-prompt"
 readme = "./README.md"
-version = "0.2.1"
+version = "0.3.0"
 repository = "https://github.com/aignas/git-prompt-rs"
 edition = "2018"
 
@@ -16,15 +16,16 @@ name = "git-prompt"
 path = "src/main.rs"
 
 [build-dependencies]
-clap = "2.33.0"
+clap = "~3.0.0-beta.2"
+clap_generate = "~3.0.0-beta.2"
 version_check = "0.9.1"
 
 [dependencies]
-git2 = "0.10.0"
+git2 = "0.13.0"
 ansi_term = "0.12"
 [dependencies.clap]
 features = ["suggestions", "color", "wrap_help"]
-version = "2.33.0"
+version = "~3.0.0-beta.2"
 
 # TODO @aignas (2019-06-11): We depend on criterion.rs for bench,
 # stabilization of the bench macro:
