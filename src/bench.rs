@@ -51,37 +51,25 @@ fn bench_view(c: &mut Criterion) {
     });
 }
 
+fn git_repo() -> git2::Repository {
+    git2::Repository::discover(".").unwrap()
+}
+
 fn bench_branch_status(c: &mut Criterion) {
-    let r = git2::Repository::discover(".");
+    let r = git_repo();
     c.bench_function("branch_status", move |b| {
-        b.iter(|| {
-            r.as_ref()
-                .or_else(|e| Err(format!("{:?}", e)))
-                .and_then(|r| model::branch_status(r, "master", "master"))
-        })
+        b.iter(|| model::branch_status(&r, "master", "master"))
     });
 }
 
 fn bench_repo_status(c: &mut Criterion) {
-    let r = git2::Repository::discover(".");
-    c.bench_function("repo_status", move |b| {
-        b.iter(|| {
-            r.as_ref()
-                .or_else(|e| Err(format!("{:?}", e)))
-                .and_then(|r| model::repo_status(r))
-        })
-    });
+    let r = git_repo();
+    c.bench_function("repo_status", move |b| b.iter(|| model::repo_status(&r)));
 }
 
 fn bench_local_status(c: &mut Criterion) {
-    let r = git2::Repository::discover(".");
-    c.bench_function("local_status", move |b| {
-        b.iter(|| {
-            r.as_ref()
-                .or_else(|e| Err(format!("{:?}", e)))
-                .map(|r| model::local_status(r))
-        })
-    });
+    let r = git_repo();
+    c.bench_function("local_status", move |b| b.iter(|| model::local_status(&r)));
 }
 
 criterion_group!(
