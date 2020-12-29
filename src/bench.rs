@@ -52,7 +52,14 @@ fn bench_view(c: &mut Criterion) {
 }
 
 fn git_repo() -> git2::Repository {
-    git2::Repository::discover(".").unwrap()
+    use git2::Repository;
+    use std::env;
+
+    let repo = match env::var_os("GIT_PROMPT_BENCH_PATH") {
+        Some(path) => Repository::discover(path),
+        None => Repository::discover("."),
+    };
+    repo.unwrap()
 }
 
 fn bench_branch_status(c: &mut Criterion) {
