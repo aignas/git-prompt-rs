@@ -11,6 +11,10 @@ version = "0.3.0"
 repository = "https://github.com/aignas/git-prompt-rs"
 edition = "2018"
 
+[lib]
+name = "prompt"
+path = "src/lib.rs"
+
 [[bin]]
 name = "git-prompt"
 path = "src/main.rs"
