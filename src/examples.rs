@@ -4,9 +4,8 @@ use std::fmt::{self, Display, Formatter};
 use std::string::String;
 
 pub fn all<'a>() -> Examples<'a> {
+    use git2::RepositoryState::{Clean, Rebase};
     let master = Some("master".to_owned());
-    let clean = git2::RepositoryState::Clean;
-    let rebase = git2::RepositoryState::Rebase;
 
     fn b(ahead: usize, behind: usize) -> Option<model::BranchStatus> {
         Some(model::BranchStatus { ahead, behind })
@@ -21,19 +20,19 @@ pub fn all<'a>() -> Examples<'a> {
     }
 
     Examples::new()
-        .add("after 'git init'", None, clean, None, s(0, 3, 0, 0))
-        .add("ok", master.clone(), clean, b(0, 0), s(0, 0, 0, 0))
-        .add("stage", master.clone(), clean, b(0, 0), s(3, 0, 0, 0))
-        .add("partial", master.clone(), clean, b(0, 0), s(3, 12, 0, 0))
-        .add(
+        .with("after 'git init'", None, Clean, None, s(0, 3, 0, 0))
+        .with("ok", master.clone(), Clean, b(0, 0), s(0, 0, 0, 0))
+        .with("stage", master.clone(), Clean, b(0, 0), s(3, 0, 0, 0))
+        .with("partial", master.clone(), Clean, b(0, 0), s(3, 12, 0, 0))
+        .with(
             "conflicts",
             Some("a83e2a3f".to_owned()),
-            rebase,
+            Rebase,
             b(0, 3),
             s(0, 2, 1, 0),
         )
-        .add("rebase", master.clone(), rebase, b(0, 3), s(0, 3, 0, 0))
-        .add("diverged", master, rebase, b(12, 3), s(0, 0, 0, 3))
+        .with("rebase", master.clone(), Rebase, b(0, 3), s(0, 3, 0, 0))
+        .with("diverged", master, Rebase, b(12, 3), s(0, 0, 0, 3))
 }
 
 pub struct Examples<'a> {
@@ -48,7 +47,7 @@ impl<'a> Examples<'a> {
         }
     }
 
-    fn add(
+    fn with(
         mut self,
         key: &str,
         br: Option<String>,
