@@ -16,6 +16,7 @@ pub fn all<'a>() -> Examples<'a> {
             unstaged,
             unmerged,
             untracked,
+            ..Default::default()
         }
     }
 

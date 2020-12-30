@@ -28,93 +28,6 @@ impl LocalStatus {
             ..Default::default()
         }
     }
-
-    pub fn add(&mut self, status: git2::Status) {
-        if status.is_wt_new() {
-            self.untracked += 1;
-        }
-        if status.is_index_new()
-            || status.is_index_modified()
-            || status.is_index_deleted()
-            || status.is_index_renamed()
-            || status.is_index_typechange()
-        {
-            self.staged += 1;
-        }
-        if status.is_wt_modified()
-            || status.is_wt_deleted()
-            || status.is_wt_renamed()
-            || status.is_wt_typechange()
-        {
-            self.unstaged += 1;
-        }
-        if status.is_conflicted() {
-            self.unmerged += 1;
-        }
-    }
-}
-
-#[cfg(test)]
-#[allow(dead_code)]
-mod local_status {
-    use super::*;
-
-    fn status(s: git2::Status) -> LocalStatus {
-        let mut actual = LocalStatus::new();
-        actual.add(s);
-        actual
-    }
-
-    #[test]
-    fn untracked() {
-        let expected = LocalStatus {
-            untracked: 1,
-            ..Default::default()
-        };
-        assert_eq!(status(git2::Status::WT_NEW), expected);
-    }
-    #[test]
-    fn staged() {
-        let expected = LocalStatus {
-            staged: 1,
-            ..Default::default()
-        };
-        assert_eq!(status(git2::Status::INDEX_NEW), expected);
-        assert_eq!(status(git2::Status::INDEX_MODIFIED), expected);
-        assert_eq!(status(git2::Status::INDEX_DELETED), expected);
-        assert_eq!(status(git2::Status::INDEX_RENAMED), expected);
-        assert_eq!(status(git2::Status::INDEX_TYPECHANGE), expected);
-    }
-    #[test]
-    fn unstaged() {
-        let expected = LocalStatus {
-            unstaged: 1,
-            ..Default::default()
-        };
-        assert_eq!(status(git2::Status::WT_MODIFIED), expected);
-        assert_eq!(status(git2::Status::WT_DELETED), expected);
-        assert_eq!(status(git2::Status::WT_RENAMED), expected);
-        assert_eq!(status(git2::Status::WT_TYPECHANGE), expected);
-    }
-    #[test]
-    fn conflict() {
-        let expected = LocalStatus {
-            unmerged: 1,
-            ..Default::default()
-        };
-        assert_eq!(status(git2::Status::CONFLICTED), expected);
-    }
-    #[test]
-    fn partial_stage() {
-        let expected = LocalStatus {
-            staged: 1,
-            unstaged: 1,
-            ..Default::default()
-        };
-        let mut s = git2::Status::WT_MODIFIED;
-        s.insert(git2::Status::INDEX_MODIFIED);
-        assert_eq!(status(s), expected);
-    }
 }
 
 pub trait Repo {
@@ -278,18 +191,37 @@ fn get_remote_ref(repo: &dyn Repo, name: &str) -> R<git2::Oid> {
 }
 
 pub fn local_status(repo: &dyn Repo) -> LocalStatus {
+    let is_staged = git2::Status::INDEX_NEW
+        | git2::Status::INDEX_MODIFIED
+        | git2::Status::INDEX_DELETED
+        | git2::Status::INDEX_RENAMED
+        | git2::Status::INDEX_TYPECHANGE;
+    let is_modified = git2::Status::WT_MODIFIED
+        | git2::Status::WT_DELETED
+        | git2::Status::WT_RENAMED
+        | git2::Status::WT_TYPECHANGE;
+
     let mut status = LocalStatus::new();
     if let Ok(statuses) = repo.statuses(Some(
         git2::StatusOptions::new()
             .include_ignored(false)
-            .include_unmodified(false)
             .recurse_ignored_dirs(false)
             .include_untracked(true)
-            .recurse_untracked_dirs(false)
-            .renames_head_to_index(true),
+            .recurse_untracked_dirs(false),
     )) {
         for s in statuses.iter().map(|e| e.status()) {
-            status.add(s)
+            if s.is_wt_new() {
+                status.untracked += 1;
+            }
+            if s.intersects(is_staged) {
+                status.staged += 1;
+            }
+            if s.intersects(is_modified) {
+                status.unstaged += 1;
+            }
+            if s.is_conflicted() {
+                status.unmerged += 1;
+            }
         }
     }
     status
